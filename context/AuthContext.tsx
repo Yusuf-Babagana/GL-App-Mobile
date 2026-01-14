@@ -25,15 +25,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const segments = useSegments();
 
+    // --- REDIRECT LOGIC ---
+    const getRedirectPath = (role: string | null) => {
+        switch (role) {
+            case 'seller':
+                return "/seller/dashboard";
+            case 'delivery_partner':
+                return "/(delivery)/dashboard"; // Now exists!
+            case 'job_seeker':
+                return "/(jobs)/dashboard"; // Now exists!
+            case 'buyer':
+            default:
+                return "/(tabs)"; // Default Home
+        }
+    };
+
     const fetchProfile = async () => {
         try {
             const res = await api.get('/users/profile/');
-            setUserRole(res.data.active_role);
+            const role = res.data.active_role;
+            setUserRole(role);
+            return role;
         } catch (e: any) {
             if (e.response?.status === 401) {
                 console.log("Session expired.");
                 await logout();
             }
+            return null;
         }
     };
 
@@ -59,20 +77,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const inAuthGroup = segments[0] === "(auth)";
 
         if (isSignedIn && inAuthGroup) {
-            router.replace("/(tabs)");
+            // Logged in? Go to your specific dashboard
+            const target = getRedirectPath(userRole);
+            // @ts-ignore
+            router.replace(target);
         } else if (!isSignedIn && !inAuthGroup) {
             router.replace("/(auth)/login");
         }
-    }, [isSignedIn, segments, isLoading]);
+    }, [isSignedIn, segments, isLoading, userRole]);
 
     const login = async (token: string, refresh: string) => {
         await SecureStore.setItemAsync("accessToken", token);
         await SecureStore.setItemAsync("refreshToken", refresh);
 
-        // IMPORTANT: We ONLY set state here. 
-        // The useEffect above detects the change and handles navigation safely.
         setIsSignedIn(true);
-        await fetchProfile();
+        const role = await fetchProfile();
+
+        const target = getRedirectPath(role);
+        // @ts-ignore
+        router.replace(target);
     };
 
     const logout = async () => {

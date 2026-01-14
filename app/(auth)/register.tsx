@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthContext"; // Import Auth Context
+import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/services/auth";
 import { Link } from "expo-router";
 import { useState } from "react";
@@ -12,13 +12,13 @@ const ROLES = [
 ];
 
 export default function RegisterScreen() {
-    const { login } = useAuth(); // Get login function
+    const { login } = useAuth();
     const [form, setForm] = useState({
         full_name: "",
         email: "",
         phone_number: "",
         password: "",
-        role: "buyer" // Default
+        role: "buyer" // Default role
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -40,7 +40,7 @@ export default function RegisterScreen() {
                 password: form.password
             });
 
-            // 3. Save Session (This triggers redirect in AuthContext)
+            // 3. Save Session (AuthContext handles the redirect based on role)
             await login(loginData.access, loginData.refresh);
 
         } catch (error: any) {
@@ -67,8 +67,8 @@ export default function RegisterScreen() {
                             key={role.id}
                             onPress={() => setForm({ ...form, role: role.id })}
                             className={`w-[48%] p-3 rounded-xl border ${form.role === role.id
-                                    ? "bg-green-50 border-[#1DB954]"
-                                    : "bg-white border-gray-200"
+                                ? "bg-green-50 border-[#1DB954]"
+                                : "bg-white border-gray-200"
                                 }`}
                         >
                             <Text className={`font-bold ${form.role === role.id ? "text-[#1DB954]" : "text-gray-900"}`}>

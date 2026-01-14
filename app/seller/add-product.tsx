@@ -1,62 +1,92 @@
-import SafeScreen from "@/components/SafeScreen";
 import api from "@/lib/api";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
-import { useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddProductScreen() {
-    const [form, setForm] = useState({
-        name: "",
-        description: "",
-        price: "",
-        stock: "",
-        category: "1", // Default category ID for now (Make sure ID 1 exists in backend or change logic)
-    });
-    const [images, setImages] = useState<string[]>([]);
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    // Pick multiple images
-    const pickImages = async () => {
+    // Form State
+    const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
+    const [price, setPrice] = useState("");
+    const [stock, setStock] = useState("");
+    const [category, setCategory] = useState<number | null>(null);
+    const [image, setImage] = useState<string | null>(null);
+
+    // Data State
+    const [categories, setCategories] = useState<any[]>([]);
+
+    // 1. Fetch Categories on Load
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                // We assume you have a public endpoint for categories. 
+                // If not, we default to ID 1 temporarily.
+                const res = await api.get("/market/categories/"); // Ensure this endpoint exists or remove this block
+                setCategories(res.data);
+                if (res.data.length > 0) setCategory(res.data[0].id);
+            } catch (e) {
+                console.log("Could not fetch categories, defaulting to 1");
+                setCategory(1); // Fallback to ID 1
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // 2. Pick Image Function
+    const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsMultipleSelection: true,
-            selectionLimit: 5,
-            quality: 0.5,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
         });
 
         if (!result.canceled) {
-            setImages([...images, ...result.assets.map((asset) => asset.uri)]);
+            setImage(result.assets[0].uri);
         }
     };
 
-    const handleCreateProduct = async () => {
-        if (!form.name || !form.price || !form.description || images.length === 0) {
-            return Alert.alert("Missing Fields", "Please fill all fields and add at least one image.");
+    // 3. Submit Function
+    const handleSubmit = async () => {
+        if (!name || !price || !description || !stock || !image) {
+            Alert.alert("Missing Fields", "Please fill all fields and add an image.");
+            return;
         }
 
         setIsLoading(true);
+
         try {
             const formData = new FormData();
-            formData.append("name", form.name);
-            formData.append("description", form.description);
-            formData.append("price", form.price);
-            formData.append("stock", form.stock || "1");
-            formData.append("category", form.category);
+            formData.append("name", name);
+            formData.append("description", description);
+            formData.append("price", price);
+            formData.append("stock", stock);
+            formData.append("currency", "NGN");
+            formData.append("category", category?.toString() || "1");
 
-            // Append images
-            images.forEach((uri, index) => {
-                const filename = uri.split("/").pop();
-                const match = /\.(\w+)$/.exec(filename || "");
-                const type = match ? `image/${match[1]}` : `image/jpeg`;
+            // Handle Image File
+            const filename = image.split("/").pop();
+            const match = /\.(\w+)$/.exec(filename || "");
+            const type = match ? `image/${match[1]}` : `image`;
 
-                // @ts-ignore
-                formData.append("uploaded_images", { uri, name: filename, type });
+            // @ts-ignore
+            formData.append("uploaded_images", {
+                uri: image,
+                name: filename,
+                type,
             });
 
+            // Backend Call
             await api.post("/market/seller/products/create/", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
             });
 
             Alert.alert("Success", "Product added successfully!", [
@@ -64,109 +94,118 @@ export default function AddProductScreen() {
             ]);
 
         } catch (error: any) {
-            console.log("Upload Error:", error.response?.data);
-            Alert.alert("Error", "Failed to upload product.");
+            console.log("Upload Error:", error.response?.data || error);
+            Alert.alert("Error", "Failed to upload product. Check your connection.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <SafeScreen>
-            <View className="px-4 py-3 border-b border-gray-100 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="black" />
+        <SafeAreaView className="flex-1 bg-white">
+            {/* Header */}
+            <View className="px-6 py-4 flex-row items-center border-b border-gray-100">
+                <TouchableOpacity onPress={() => router.back()} className="p-2 bg-gray-100 rounded-full mr-4">
+                    <Ionicons name="arrow-back" size={20} color="black" />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold ml-4">Add New Product</Text>
+                <Text className="text-xl font-bold">Add New Product</Text>
             </View>
 
-            <ScrollView className="flex-1 p-6">
+            <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+
                 {/* Image Picker */}
-                <View className="mb-6">
-                    <Text className="text-gray-700 font-medium mb-2">Product Images</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3">
-                        <TouchableOpacity
-                            onPress={pickImages}
-                            className="w-24 h-24 bg-gray-100 rounded-xl items-center justify-center border-2 border-dashed border-gray-300"
-                        >
-                            <Ionicons name="camera" size={30} color="#9CA3AF" />
-                            <Text className="text-xs text-gray-500 mt-1">Add</Text>
-                        </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={pickImage}
+                    className="w-full h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 items-center justify-center mb-6 overflow-hidden"
+                >
+                    {image ? (
+                        <Image source={{ uri: image }} className="w-full h-full" resizeMode="cover" />
+                    ) : (
+                        <>
+                            <Ionicons name="camera-outline" size={40} color="#9CA3AF" />
+                            <Text className="text-gray-400 mt-2 font-medium">Tap to upload image</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
 
-                        {images.map((uri, index) => (
-                            <View key={index} className="relative">
-                                <Image source={{ uri }} className="w-24 h-24 rounded-xl" />
-                                <TouchableOpacity
-                                    onPress={() => setImages(images.filter((_, i) => i !== index))}
-                                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
-                                >
-                                    <Ionicons name="close" size={12} color="white" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Inputs */}
-                <View className="gap-4 pb-10">
+                {/* Form Fields */}
+                <View className="gap-4 mb-10">
                     <View>
-                        <Text className="text-gray-700 font-medium mb-1">Product Name</Text>
+                        <Text className="text-gray-700 font-medium mb-1 ml-1">Product Name</Text>
                         <TextInput
                             className="bg-gray-50 p-4 rounded-xl border border-gray-200"
-                            placeholder="e.g. Wireless Headphones"
-                            value={form.name}
-                            onChangeText={(t) => setForm({ ...form, name: t })}
+                            placeholder="e.g. iPhone 15 Pro"
+                            value={name}
+                            onChangeText={setName}
                         />
                     </View>
 
                     <View className="flex-row gap-4">
                         <View className="flex-1">
-                            <Text className="text-gray-700 font-medium mb-1">Price (₦)</Text>
+                            <Text className="text-gray-700 font-medium mb-1 ml-1">Price (₦)</Text>
                             <TextInput
                                 className="bg-gray-50 p-4 rounded-xl border border-gray-200"
                                 placeholder="0.00"
                                 keyboardType="numeric"
-                                value={form.price}
-                                onChangeText={(t) => setForm({ ...form, price: t })}
+                                value={price}
+                                onChangeText={setPrice}
                             />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-gray-700 font-medium mb-1">Stock</Text>
+                            <Text className="text-gray-700 font-medium mb-1 ml-1">Stock</Text>
                             <TextInput
                                 className="bg-gray-50 p-4 rounded-xl border border-gray-200"
                                 placeholder="Qty"
                                 keyboardType="numeric"
-                                value={form.stock}
-                                onChangeText={(t) => setForm({ ...form, stock: t })}
+                                value={stock}
+                                onChangeText={setStock}
                             />
                         </View>
                     </View>
 
                     <View>
-                        <Text className="text-gray-700 font-medium mb-1">Description</Text>
+                        <Text className="text-gray-700 font-medium mb-1 ml-1">Description</Text>
                         <TextInput
                             className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-32"
                             placeholder="Describe your product..."
                             multiline
                             textAlignVertical="top"
-                            value={form.description}
-                            onChangeText={(t) => setForm({ ...form, description: t })}
+                            value={description}
+                            onChangeText={setDescription}
                         />
                     </View>
 
+                    {/* Simple Category Selector (Optional - If categories exist) */}
+                    {categories.length > 0 && (
+                        <View>
+                            <Text className="text-gray-700 font-medium mb-2 ml-1">Category</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                                {categories.map((cat) => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        onPress={() => setCategory(cat.id)}
+                                        className={`px-4 py-2 rounded-full border ${category === cat.id ? 'bg-black border-black' : 'bg-white border-gray-200'}`}
+                                    >
+                                        <Text className={category === cat.id ? 'text-white' : 'text-gray-700'}>{cat.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
                     <TouchableOpacity
-                        className="bg-[#1DB954] py-4 rounded-xl items-center mt-4"
-                        onPress={handleCreateProduct}
+                        onPress={handleSubmit}
                         disabled={isLoading}
+                        className="bg-[#1DB954] py-4 rounded-full items-center mt-4 shadow-lg shadow-green-200"
                     >
                         {isLoading ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-white font-bold text-lg">Publish Product</Text>
+                            <Text className="text-white font-bold text-lg">Create Listing</Text>
                         )}
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-        </SafeScreen>
+        </SafeAreaView>
     );
 }
