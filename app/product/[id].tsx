@@ -72,10 +72,24 @@ export default function ProductDetailScreen() {
         </View>
 
         <View className="px-6 pt-2">
-          {/* Store Tag */}
-          <View className="flex-row items-center mb-3">
-            <Ionicons name="storefront" size={16} color="#6B7280" />
-            <Text className="text-gray-500 font-medium ml-2">{product.store?.name || "Official Store"}</Text>
+
+          {/* STORE INFO & CHAT BUTTON */}
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center">
+              <Ionicons name="storefront" size={16} color="#6B7280" />
+              <Text className="text-gray-500 font-medium ml-2">{product.store?.name || "Official Store"}</Text>
+            </View>
+
+            {/* Chat Button (Only shows if owner_id exists) */}
+            {product.store?.owner_id && (
+              <TouchableOpacity
+                onPress={() => router.push(`/chat/${product.store.owner_id}`)}
+                className="bg-blue-50 px-3 py-1.5 rounded-full flex-row items-center"
+              >
+                <Ionicons name="chatbubble-ellipses" size={16} color="#3B82F6" />
+                <Text className="text-blue-600 font-bold text-xs ml-1">Chat</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text className="text-3xl font-bold text-gray-900 mb-2">{product.name}</Text>

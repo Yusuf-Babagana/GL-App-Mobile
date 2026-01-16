@@ -246,5 +246,105 @@ export const marketAPI = {
             if (error.response) throw error.response.data;
             throw error;
         }
-    }
+    },
+    updateOrderStatus: async (orderId: number, status: 'shipped' | 'pending') => {
+        try {
+            const response = await api.post(`/market/seller/orders/${orderId}/update/`, { status });
+            return response.data;
+        } catch (error) {
+            // @ts-ignore
+            if (error.response) throw error.response.data;
+            throw error;
+        }
+    },
+
+    // --- RIDER FUNCTIONS ---
+    getAvailableDeliveries: async () => {
+        try {
+            const response = await api.get('/market/rider/orders/available/');
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    getRiderActiveDeliveries: async () => {
+        try {
+            const response = await api.get('/market/rider/orders/active/');
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    acceptDelivery: async (orderId: number) => {
+        try {
+            const response = await api.post(`/market/rider/orders/${orderId}/accept/`, {});
+            return response.data;
+        } catch (error) {
+            // @ts-ignore
+            if (error.response) throw error.response.data;
+            throw error;
+        }
+    },
+
+    riderUpdateStatus: async (orderId: number, status: 'picked_up' | 'delivered', pin?: string) => {
+        try {
+            const payload = { status, pin };
+            const response = await api.post(`/market/rider/orders/${orderId}/update/`, payload);
+            return response.data;
+        } catch (error) {
+            // @ts-ignore
+            if (error.response) throw error.response.data;
+            throw error;
+        }
+    },
+
+    getAdminStats: async () => {
+        try {
+            const response = await api.get('/market/admin/stats/');
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    // --- KYC FUNCTIONS ---
+    submitKYC: async (formData: FormData) => {
+        try {
+            // Important: We send FormData, so we let the browser/native set Content-Type
+            const response = await api.post('/users/kyc/upload/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    getPendingKYC: async () => {
+        try {
+            const response = await api.get('/users/admin/kyc/pending/');
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    adminKYCAction: async (userId: number, action: 'approve' | 'reject') => {
+        try {
+            const response = await api.post(`/users/admin/kyc/${userId}/action/`, { action });
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    // --- CHAT FUNCTIONS ---
+    startChat: async (userId: number) => {
+        try {
+            const response = await api.post(`/market/chat/start/${userId}/`, {});
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    sendMessage: async (conversationId: number, text: string) => {
+        try {
+            const response = await api.post(`/market/chat/${conversationId}/send/`, { text });
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+    getConversations: async () => {
+        const { data } = await api.get('/market/conversations/');
+        return data;
+    },
 };

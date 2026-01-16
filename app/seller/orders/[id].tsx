@@ -11,21 +11,13 @@ export default function SellerOrderDetailScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // We reuse getOrderById because the serializer sends the same data structure
-    // But we need to make sure the backend allows sellers to view specific orders via ID
-    // Note: For now, we will assume the seller fetches it via the same endpoint or the list data passed via params.
-    // To be robust, let's fetch it freshly.
-
     const fetchOrder = async () => {
         try {
-            // We will filter from the list API for now to save creating a new endpoint, 
-            // or effectively we can use the existing BuyerOrderDetail if we relax permissions, 
-            // but let's stick to using the list filter logic on the client for MVP speed 
-            // OR simply implement a specific SellerOrderDetail endpoint. 
-            // Let's TRY using the ID directly. If it fails, we fix the backend.
-            // Actually, let's use a quick trick: fetch all seller orders and find this one.
-            const orders = await marketAPI.getSellerOrders();
-            const found = (orders.results || orders).find((o: any) => o.id === Number(id));
+            // Quick trick: Fetch all seller orders and find the specific one
+            // This saves us from creating a new backend endpoint just for this
+            const ordersRes = await marketAPI.getSellerOrders();
+            const allOrders = ordersRes.results || ordersRes;
+            const found = allOrders.find((o: any) => o.id === Number(id));
             setOrder(found);
         } catch (e) {
             console.log("Error", e);
@@ -38,17 +30,18 @@ export default function SellerOrderDetailScreen() {
         fetchOrder();
     }, [id]);
 
-    const markAsShipped = async () => {
-        Alert.alert("Confirm Shipment", "Are you sure you have shipped this item?", [
+    const markAsReady = async () => {
+        Alert.alert("Confirm", "Is this order packed and ready for the rider?", [
             { text: "Cancel", style: "cancel" },
             {
-                text: "Yes, Mark Shipped",
+                text: "Yes, Ready for Pickup",
                 onPress: async () => {
                     setIsUpdating(true);
                     try {
-                        await marketAPI.updateOrderStatus(Number(id), 'shipped');
-                        Alert.alert("Success", "Buyer has been notified!");
-                        fetchOrder(); // Refresh
+                        // We use 'ready_for_pickup' status so Riders can see it
+                        await marketAPI.updateOrderStatus(Number(id), 'ready_for_pickup');
+                        Alert.alert("Success", "Riders have been notified!");
+                        fetchOrder(); // Refresh UI
                     } catch (e: any) {
                         Alert.alert("Error", e.message || "Failed to update");
                     } finally {
@@ -80,27 +73,36 @@ export default function SellerOrderDetailScreen() {
                     <Text className="text-white text-2xl font-bold">Order #{order.id}</Text>
                 </View>
                 <View className="flex-row gap-2">
-                    <View className={`px-3 py-1 rounded-full ${order.delivery_status === 'shipped' ? 'bg-blue-500' : order.delivery_status === 'delivered' ? 'bg-green-500' : 'bg-orange-500'}`}>
-                        <Text className="text-white font-bold text-xs uppercase">{order.delivery_status}</Text>
+                    {/* Status Badge */}
+                    <View className={`px-3 py-1 rounded-full ${order.delivery_status === 'delivered' ? 'bg-green-500' :
+                            order.delivery_status === 'ready_for_pickup' ? 'bg-blue-500' :
+                                order.delivery_status === 'picked_up' ? 'bg-purple-500' :
+                                    'bg-orange-500'
+                        }`}>
+                        <Text className="text-white font-bold text-xs uppercase">{order.delivery_status.replace("_", " ")}</Text>
                     </View>
+
+                    {/* Payment Badge */}
                     <View className={`px-3 py-1 rounded-full ${order.payment_status === 'released' ? 'bg-green-500' : 'bg-gray-700'}`}>
-                        <Text className="text-white font-bold text-xs uppercase">Payment: {order.payment_status === 'released' ? 'Paid' : 'In Escrow'}</Text>
+                        <Text className="text-white font-bold text-xs uppercase">
+                            {order.payment_status === 'released' ? 'Paid' : 'Escrow Locked'}
+                        </Text>
                     </View>
                 </View>
             </View>
 
             <ScrollView className="flex-1 px-6 pt-6">
 
-                {/* Shipping Address Card */}
+                {/* Buyer Info Card */}
                 <View className="bg-white p-5 rounded-2xl mb-4 shadow-sm border border-gray-100">
                     <View className="flex-row items-center mb-3">
-                        <Ionicons name="location" size={20} color="#1DB954" />
-                        <Text className="font-bold text-gray-900 ml-2 text-lg">Ship To</Text>
+                        <Ionicons name="person" size={20} color="#1DB954" />
+                        <Text className="font-bold text-gray-900 ml-2 text-lg">Customer Details</Text>
                     </View>
                     <Text className="text-gray-900 text-base font-medium mb-1">{order.shipping_address_json?.address}</Text>
                     <Text className="text-gray-500 mb-2">{order.shipping_address_json?.city}</Text>
 
-                    <TouchableOpacity className="flex-row items-center bg-gray-50 p-3 rounded-xl">
+                    <TouchableOpacity className="flex-row items-center bg-gray-50 p-3 rounded-xl mt-2">
                         <Ionicons name="call" size={18} color="#3B82F6" />
                         <Text className="text-blue-600 font-bold ml-2">{order.shipping_address_json?.phone}</Text>
                     </TouchableOpacity>
@@ -108,33 +110,36 @@ export default function SellerOrderDetailScreen() {
 
                 {/* Items List */}
                 <Text className="font-bold text-gray-900 text-lg mb-3 ml-1">Items to Pack</Text>
-                {order.items?.map((item: any) => (
+                {/* We map through items if available, or just show a placeholder if the structure differs */}
+                {order.items ? order.items.map((item: any) => (
                     <View key={item.id} className="flex-row items-center mb-3 bg-white p-4 rounded-2xl border border-gray-100">
-                        <View className="w-12 h-12 bg-gray-200 rounded-lg items-center justify-center">
-                            <Text className="font-bold text-gray-500">x{item.quantity}</Text>
+                        <View className="w-12 h-12 bg-gray-100 rounded-lg items-center justify-center">
+                            <Text className="font-bold text-gray-900">x{item.quantity}</Text>
                         </View>
                         <View className="ml-4 flex-1">
-                            <Text className="font-bold text-gray-900">{item.product_name}</Text>
+                            <Text className="font-bold text-gray-900 text-lg">{item.product?.name || "Product"}</Text>
                             <Text className="text-green-600 font-bold">₦{Number(item.price_at_purchase).toLocaleString()}</Text>
                         </View>
                     </View>
-                ))}
+                )) : (
+                    <Text className="text-gray-500">Items loading...</Text>
+                )}
 
                 <View className="h-24" />
             </ScrollView>
 
-            {/* Action Button */}
+            {/* Action Button: Only show if status is Pending */}
             {order.delivery_status === 'pending' && (
                 <View className="absolute bottom-0 w-full p-6 bg-white border-t border-gray-100">
                     <TouchableOpacity
-                        onPress={markAsShipped}
+                        onPress={markAsReady}
                         disabled={isUpdating}
                         className="bg-gray-900 py-4 rounded-2xl items-center shadow-lg"
                     >
                         {isUpdating ? <ActivityIndicator color="white" /> : (
                             <View className="flex-row items-center">
                                 <Ionicons name="cube" size={20} color="white" style={{ marginRight: 8 }} />
-                                <Text className="text-white font-bold text-lg">Mark as Shipped</Text>
+                                <Text className="text-white font-bold text-lg">Ready for Pickup</Text>
                             </View>
                         )}
                     </TouchableOpacity>

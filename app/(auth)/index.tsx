@@ -1,8 +1,17 @@
-import useSocialAuth from "@/hooks/useSocialAuth";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 
 const AuthScreen = () => {
-  const { loadingStrategy, handleSocialAuth } = useSocialAuth();
+  const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
+
+  const handleSocialAuth = async (strategy: string) => {
+    setLoadingStrategy(strategy);
+    // TODO: Implement social auth real logic
+    setTimeout(() => {
+      setLoadingStrategy(null);
+      Alert.alert("Not Implemented", `Social auth with ${strategy} is coming soon!`);
+    }, 1000);
+  };
 
   return (
     <View className="px-8 flex-1 justify-center items-center bg-white">

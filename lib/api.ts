@@ -3,7 +3,6 @@ import * as SecureStore from "expo-secure-store";
 
 // UPDATED IP
 const API_URL = "http://192.168.1.254:8000/api";
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -12,6 +11,7 @@ const api = axios.create({
   timeout: 15000,
 });
 
+
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync("accessToken");
   if (token) {
@@ -19,5 +19,7 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+
 
 export default api;
