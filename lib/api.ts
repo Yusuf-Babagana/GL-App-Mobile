@@ -2,6 +2,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 // UPDATED IP
+// REMOVE the space between // and 192
 const API_URL = "http://192.168.1.254:8000/api";
 const api = axios.create({
   baseURL: API_URL,

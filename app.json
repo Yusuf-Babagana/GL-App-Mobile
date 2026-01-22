@@ -10,7 +10,9 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.anonymous.mobile",
+      "statusBarHidden": false, // Add this
+      "statusBarStyle": "dark-content" // Add this
     },
     "android": {
       "adaptiveIcon": {
@@ -19,9 +21,15 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false, // Change this to false
+      "softwareKeyboardLayoutMode": "resize", // Add this
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.mobile"
+      "package": "com.anonymous.mobile",
+      "statusBar": {
+        "backgroundColor": "#FFFFFF", // Add this
+        "translucent": false, // Add this
+        "barStyle": "dark-content" // Add this
+      }
     },
     "web": {
       "output": "static",

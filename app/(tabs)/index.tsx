@@ -17,7 +17,7 @@ export default function MarketScreen() {
     try {
       setIsLoading(true);
       const [prodData, catData] = await Promise.all([
-        marketAPI.getProducts(searchQuery), // Ensure your API accepts search query
+        marketAPI.getProducts(searchQuery),
         marketAPI.getCategories()
       ]);
       setProducts(prodData.results || prodData);
@@ -40,29 +40,34 @@ export default function MarketScreen() {
   const renderProduct = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() => router.push(`/product/${item.id}`)}
-      className="flex-1 m-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+      activeOpacity={0.9}
+      className="flex-1 m-2 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
     >
-      <View className="h-40 bg-gray-100 w-full relative">
+      <View className="h-44 bg-gray-100 w-full relative">
         <Image
           source={{ uri: item.image || item.images?.[0]?.image }}
           className="w-full h-full"
           contentFit="cover"
-          transition={200}
+          transition={300}
         />
         {item.stock <= 0 && (
-          <View className="absolute top-2 right-2 bg-red-500 px-2 py-1 rounded-md">
+          <View className="absolute top-3 right-3 bg-black/60 px-2 py-1 rounded-lg">
             <Text className="text-white text-[10px] font-bold uppercase">Sold Out</Text>
           </View>
         )}
       </View>
 
-      <View className="p-3">
-        <Text className="text-gray-900 font-bold text-base mb-1" numberOfLines={1}>{item.name}</Text>
-        <Text className="text-gray-500 text-xs mb-2" numberOfLines={1}>{item.store?.name || "Official Store"}</Text>
-        <View className="flex-row justify-between items-center">
-          <Text className="text-[#1DB954] font-bold text-lg">₦{Number(item.price).toLocaleString()}</Text>
-          <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center">
-            <Ionicons name="add" size={20} color="black" />
+      <View className="p-4">
+        <Text className="text-gray-400 text-[10px] font-bold uppercase mb-1">{item.category?.name || "General"}</Text>
+        <Text className="text-gray-900 font-bold text-sm mb-1" numberOfLines={1}>{item.name}</Text>
+
+        <View className="flex-row justify-between items-center mt-2">
+          <View>
+            <Text className="text-gray-400 text-[10px]">Price</Text>
+            <Text className="text-gray-900 font-black text-base">₦{Number(item.price).toLocaleString()}</Text>
+          </View>
+          <View className="w-9 h-9 bg-gray-900 rounded-2xl items-center justify-center shadow-md">
+            <Ionicons name="add" size={20} color="white" />
           </View>
         </View>
       </View>
@@ -70,58 +75,67 @@ export default function MarketScreen() {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="light-content" backgroundColor="#111827" />
+    <View className="flex-1 bg-white">
+      {/* Set StatusBar to light-content because our header is dark */}
+      <StatusBar barStyle="light-content" />
 
-      {/* Header Section */}
-      <View className="bg-gray-900 pt-12 pb-6 px-6 rounded-b-[32px] shadow-lg z-10">
+      {/* Modern Dark Header */}
+      <View className="bg-gray-950 pt-14 pb-8 px-6 rounded-b-[40px] shadow-2xl">
         <View className="flex-row justify-between items-center mb-6">
           <View>
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Welcome Back</Text>
-            <Text className="text-white text-3xl font-bold">Marketplace</Text>
+            <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Explore</Text>
+            <Text className="text-white text-3xl font-black italic">Marketplace</Text>
           </View>
-          <TouchableOpacity onPress={() => router.push("/cart")} className="bg-gray-800 p-3 rounded-full relative">
-            <Ionicons name="cart-outline" size={24} color="white" />
-            <View className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border border-gray-900" />
+          <TouchableOpacity
+            onPress={() => router.push("/cart")}
+            className="bg-gray-800/50 w-12 h-12 rounded-2xl items-center justify-center border border-gray-700"
+          >
+            <Ionicons name="bag-handle-outline" size={24} color="white" />
+            <View className="absolute -top-1 -right-1 w-5 h-5 bg-[#1DB954] rounded-full border-2 border-gray-950 items-center justify-center">
+              <Text className="text-white text-[10px] font-bold">2</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-800 rounded-2xl px-4 py-3">
-          <Ionicons name="search" size={20} color="#9CA3AF" />
+        {/* Professional Search Bar */}
+        <View className="flex-row items-center bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3">
+          <Ionicons name="search-outline" size={20} color="#6B7280" />
           <TextInput
-            className="flex-1 ml-3 text-white font-medium"
-            placeholder="Search products..."
-            placeholderTextColor="#9CA3AF"
+            className="flex-1 ml-3 text-white font-semibold"
+            placeholder="Search premium products..."
+            placeholderTextColor="#4B5563"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
       </View>
 
-      {/* Categories */}
-      <View className="mt-4">
+      {/* Enhanced Categories */}
+      <View className="py-6">
         <FlatList
-          data={[{ id: null, name: "All" }, ...categories]}
+          data={[{ id: null, name: "All Items" }, ...categories]}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24 }}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
           keyExtractor={(item) => item.id?.toString() || 'all'}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => setSelectedCategory(item.id)}
-              className={`mr-3 px-5 py-2.5 rounded-xl border ${selectedCategory === item.id ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'}`}
-            >
-              <Text className={`font-bold ${selectedCategory === item.id ? 'text-white' : 'text-gray-600'}`}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const isSelected = selectedCategory === item.id;
+            return (
+              <TouchableOpacity
+                onPress={() => setSelectedCategory(item.id)}
+                className={`mr-3 px-6 py-3 rounded-2xl border ${isSelected ? 'bg-gray-900 border-gray-900 shadow-md' : 'bg-gray-50 border-gray-100'}`}
+              >
+                <Text className={`font-bold text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}>{item.name}</Text>
+              </TouchableOpacity>
+            );
+          }}
         />
       </View>
 
-      {/* Product Grid */}
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#1DB954" />
+          <Text className="text-gray-400 mt-4 font-bold uppercase tracking-widest text-[10px]">Loading Collection</Text>
         </View>
       ) : (
         <FlatList
@@ -129,12 +143,15 @@ export default function MarketScreen() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderProduct}
           numColumns={2}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="items-center mt-20">
-              <Ionicons name="search" size={48} color="#D1D5DB" />
-              <Text className="text-gray-400 mt-4 font-medium">No products found</Text>
+              <View className="bg-gray-100 p-6 rounded-full">
+                <Ionicons name="search-outline" size={40} color="#9CA3AF" />
+              </View>
+              <Text className="text-gray-900 mt-4 font-bold text-lg">No results found</Text>
+              <Text className="text-gray-400 text-sm">Try a different search term</Text>
             </View>
           }
         />
