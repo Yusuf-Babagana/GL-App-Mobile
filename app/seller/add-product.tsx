@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -25,23 +26,21 @@ export default function AddProductScreen() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                // We assume you have a public endpoint for categories. 
-                // If not, we default to ID 1 temporarily.
-                const res = await api.get("/market/categories/"); // Ensure this endpoint exists or remove this block
+                const res = await api.get("/market/categories/");
                 setCategories(res.data);
                 if (res.data.length > 0) setCategory(res.data[0].id);
             } catch (e) {
                 console.log("Could not fetch categories, defaulting to 1");
-                setCategory(1); // Fallback to ID 1
+                setCategory(1);
             }
         };
         fetchCategories();
     }, []);
 
-    // 2. Pick Image Function
+    // 2. Pick Image Function (Updated to remove deprecation warning)
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'], // Use modern array syntax
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.8,
@@ -52,7 +51,7 @@ export default function AddProductScreen() {
         }
     };
 
-    // 3. Submit Function
+    // 3. Updated Submit Function with Cloudinary and JSON payload
     const handleSubmit = async () => {
         if (!name || !price || !description || !stock || !image) {
             Alert.alert("Missing Fields", "Please fill all fields and add an image.");
@@ -62,32 +61,24 @@ export default function AddProductScreen() {
         setIsLoading(true);
 
         try {
-            const formData = new FormData();
-            formData.append("name", name);
-            formData.append("description", description);
-            formData.append("price", price);
-            formData.append("stock", stock);
-            formData.append("currency", "NGN");
-            formData.append("category", category?.toString() || "1");
+            // STEP 1: Upload the local image to Cloudinary
+            const cloudinaryUrl = await uploadToCloudinary(image);
 
-            // Handle Image File
-            const filename = image.split("/").pop();
-            const match = /\.(\w+)$/.exec(filename || "");
-            const type = match ? `image/${match[1]}` : `image`;
+            // STEP 2: Prepare the JSON payload
+            // Using parseFloat and parseInt ensures correct data types for the backend
+            const productData = {
+                name,
+                description,
+                price: parseFloat(price),
+                stock: parseInt(stock),
+                currency: "NGN",
+                category: category || 1,
+                cloudinary_url: cloudinaryUrl, // The backend serializer extracts this
+            };
 
-            // @ts-ignore
-            formData.append("uploaded_images", {
-                uri: image,
-                name: filename,
-                type,
-            });
-
-            // Backend Call
-            await api.post("/market/seller/products/create/", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            // STEP 3: Send to Backend as JSON 
+            // We no longer use FormData or "Content-Type": "multipart/form-data"
+            await api.post("/market/seller/products/create/", productData);
 
             Alert.alert("Success", "Product added successfully!", [
                 { text: "OK", onPress: () => router.back() }
@@ -95,7 +86,10 @@ export default function AddProductScreen() {
 
         } catch (error: any) {
             console.log("Upload Error:", error.response?.data || error);
-            Alert.alert("Error", "Failed to upload product. Check your connection.");
+            const errorMsg = error.response?.data
+                ? JSON.stringify(error.response.data)
+                : "Failed to upload product. Check your connection.";
+            Alert.alert("Error", errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -175,7 +169,7 @@ export default function AddProductScreen() {
                         />
                     </View>
 
-                    {/* Simple Category Selector (Optional - If categories exist) */}
+                    {/* Category Selector */}
                     {categories.length > 0 && (
                         <View>
                             <Text className="text-gray-700 font-medium mb-2 ml-1">Category</Text>

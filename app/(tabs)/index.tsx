@@ -1,9 +1,19 @@
+import api from "@/lib/api"; // Added for delete functionality
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, StatusBar, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 export default function MarketScreen() {
   const router = useRouter();
@@ -23,7 +33,7 @@ export default function MarketScreen() {
       setProducts(prodData.results || prodData);
       setCategories(catData);
     } catch (e) {
-      console.log(e);
+      console.log("Fetch Error:", e);
     } finally {
       setIsLoading(false);
     }
@@ -33,53 +43,112 @@ export default function MarketScreen() {
     useCallback(() => { fetchData(); }, [searchQuery])
   );
 
+  // Function to handle vendor product deletion
+  const handleDelete = (productId: number) => {
+    Alert.alert(
+      "Delete Product",
+      "Are you sure you want to remove this item from your store?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/market/seller/products/${productId}/delete/`);
+              Alert.alert("Success", "Product removed.");
+              fetchData();
+            } catch (e: any) {
+              const msg = e.response?.status === 403
+                ? "You can only delete your own products."
+                : "Delete failed.";
+              Alert.alert("Error", msg);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const filteredProducts = selectedCategory
     ? products.filter(p => p.category === selectedCategory || p.category?.id === selectedCategory)
     : products;
 
-  const renderProduct = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      onPress={() => router.push(`/product/${item.id}`)}
-      activeOpacity={0.9}
-      className="flex-1 m-2 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
-    >
-      <View className="h-44 bg-gray-100 w-full relative">
-        <Image
-          source={{ uri: item.image || item.images?.[0]?.image }}
-          className="w-full h-full"
-          contentFit="cover"
-          transition={300}
-        />
-        {item.stock <= 0 && (
-          <View className="absolute top-3 right-3 bg-black/60 px-2 py-1 rounded-lg">
-            <Text className="text-white text-[10px] font-bold uppercase">Sold Out</Text>
-          </View>
-        )}
-      </View>
+  const renderProduct = ({ item }: { item: any }) => {
+    if (!item) return null;
 
-      <View className="p-4">
-        <Text className="text-gray-400 text-[10px] font-bold uppercase mb-1">{item.category?.name || "General"}</Text>
-        <Text className="text-gray-900 font-bold text-sm mb-1" numberOfLines={1}>{item.name}</Text>
+    // 1. Get raw path from the backend JSON
+    const rawPath = item.images?.[0]?.image;
 
-        <View className="flex-row justify-between items-center mt-2">
-          <View>
-            <Text className="text-gray-400 text-[10px]">Price</Text>
-            <Text className="text-gray-900 font-black text-base">₦{Number(item.price).toLocaleString()}</Text>
-          </View>
-          <View className="w-9 h-9 bg-gray-900 rounded-2xl items-center justify-center shadow-md">
-            <Ionicons name="add" size={20} color="white" />
+    // 2. Logic to build the final URI (Cloudinary vs Local)
+    const getImageUrl = (path: string) => {
+      if (!path) return 'https://via.placeholder.com/400';
+      if (path.startsWith('http')) return path; // Use Cloudinary directly
+      return `http://172.20.10.7:8000/media/${path}`; // Fix local paths
+    };
+
+    const finalImageUri = getImageUrl(rawPath);
+
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/product/${item.id}`)}
+        activeOpacity={0.9}
+        className="flex-1 m-2 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+      >
+        <View className="h-44 bg-gray-100 w-full relative">
+          <Image
+            source={{ uri: finalImageUri }}
+            className="w-full h-full"
+            contentFit="cover"
+            transition={300}
+          />
+          {item.stock <= 0 && (
+            <View className="absolute top-3 right-3 bg-black/60 px-2 py-1 rounded-lg">
+              <Text className="text-white text-[10px] font-bold uppercase">Sold Out</Text>
+            </View>
+          )}
+        </View>
+
+        <View className="p-4">
+          <Text className="text-gray-400 text-[10px] font-bold uppercase mb-1">
+            {item.category?.name || "General"}
+          </Text>
+          <Text className="text-gray-900 font-bold text-sm mb-1" numberOfLines={1}>
+            {item.name}
+          </Text>
+
+          <View className="flex-row justify-between items-center mt-2">
+            <View className="flex-1">
+              <Text className="text-gray-400 text-[10px]">Price</Text>
+              <Text className="text-gray-900 font-black text-sm">
+                ₦{item.price ? Number(item.price).toLocaleString() : "0"}
+              </Text>
+            </View>
+
+            <View className="flex-row">
+              {/* Delete Button for Vendors */}
+              <TouchableOpacity
+                onPress={() => handleDelete(item.id)}
+                className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2"
+              >
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+              </TouchableOpacity>
+
+              <View className="w-8 h-8 bg-gray-900 rounded-lg items-center justify-center shadow-md">
+                <Ionicons name="add" size={18} color="white" />
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View className="flex-1 bg-white">
-      {/* Set StatusBar to light-content because our header is dark */}
       <StatusBar barStyle="light-content" />
 
-      {/* Modern Dark Header */}
+      {/* Header Section */}
       <View className="bg-gray-950 pt-14 pb-8 px-6 rounded-b-[40px] shadow-2xl">
         <View className="flex-row justify-between items-center mb-6">
           <View>
@@ -91,13 +160,9 @@ export default function MarketScreen() {
             className="bg-gray-800/50 w-12 h-12 rounded-2xl items-center justify-center border border-gray-700"
           >
             <Ionicons name="bag-handle-outline" size={24} color="white" />
-            <View className="absolute -top-1 -right-1 w-5 h-5 bg-[#1DB954] rounded-full border-2 border-gray-950 items-center justify-center">
-              <Text className="text-white text-[10px] font-bold">2</Text>
-            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Professional Search Bar */}
         <View className="flex-row items-center bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3">
           <Ionicons name="search-outline" size={20} color="#6B7280" />
           <TextInput
@@ -110,7 +175,7 @@ export default function MarketScreen() {
         </View>
       </View>
 
-      {/* Enhanced Categories */}
+      {/* Categories Filter */}
       <View className="py-6">
         <FlatList
           data={[{ id: null, name: "All Items" }, ...categories]}
@@ -147,11 +212,8 @@ export default function MarketScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="items-center mt-20">
-              <View className="bg-gray-100 p-6 rounded-full">
-                <Ionicons name="search-outline" size={40} color="#9CA3AF" />
-              </View>
+              <Ionicons name="search-outline" size={40} color="#9CA3AF" />
               <Text className="text-gray-900 mt-4 font-bold text-lg">No results found</Text>
-              <Text className="text-gray-400 text-sm">Try a different search term</Text>
             </View>
           }
         />

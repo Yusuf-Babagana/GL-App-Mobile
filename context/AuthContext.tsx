@@ -14,9 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as any);
 
-export function useAuth() {
-    return useContext(AuthContext);
-}
+export function useAuth() { return useContext(AuthContext); }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isSignedIn, setIsSignedIn] = useState(false);
@@ -25,18 +23,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const segments = useSegments();
 
-    // --- REDIRECT LOGIC ---
     const getRedirectPath = (role: string | null) => {
         switch (role) {
-            case 'seller':
-                return "/seller/dashboard";
-            case 'delivery_partner':
-                return "/(delivery)/dashboard"; // Now exists!
-            case 'job_seeker':
-                return "/(jobs)/dashboard"; // Now exists!
+            case 'seller': return "/seller/dashboard";
+            case 'delivery_partner': return "/(delivery)/dashboard";
+            case 'job_seeker': return "/(jobs)/dashboard";
             case 'buyer':
-            default:
-                return "/(tabs)"; // Default Home
+            default: return "/(tabs)";
         }
     };
 
@@ -47,10 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserRole(role);
             return role;
         } catch (e: any) {
-            if (e.response?.status === 401) {
-                console.log("Session expired.");
-                await logout();
-            }
+            if (e.response?.status === 401) await logout();
             return null;
         }
     };
@@ -77,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const inAuthGroup = segments[0] === "(auth)";
 
         if (isSignedIn && inAuthGroup) {
-            // Logged in? Go to your specific dashboard
             const target = getRedirectPath(userRole);
             // @ts-ignore
             router.replace(target);
@@ -89,10 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (token: string, refresh: string) => {
         await SecureStore.setItemAsync("accessToken", token);
         await SecureStore.setItemAsync("refreshToken", refresh);
-
         setIsSignedIn(true);
         const role = await fetchProfile();
-
         const target = getRedirectPath(role);
         // @ts-ignore
         router.replace(target);
@@ -109,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#1DB954" />
+                <ActivityIndicator size="large" color="#10B981" />
             </View>
         );
     }

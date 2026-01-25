@@ -347,4 +347,13 @@ export const marketAPI = {
         const { data } = await api.get('/market/conversations/');
         return data;
     },
+
+
+    getOrderDetail: async (id: string | string[]) => {
+        // This uses your central API instance which should have the Token interceptor
+        const response = await api.get(`/market/seller/orders/${id}/`);
+        return response.data;
+    },
+
+
 };

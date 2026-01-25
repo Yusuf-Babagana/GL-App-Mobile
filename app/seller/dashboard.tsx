@@ -12,23 +12,17 @@ export default function SellerDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
 
-    // Fetch all data (Products, Orders, Stats)
     const fetchAllData = async () => {
         try {
             setIsLoading(true);
-
-            // 1. Fetch Products
-            const productsRes = await api.get("/market/seller/products/");
+            const [productsRes, ordersRes, statsRes] = await Promise.all([
+                api.get("/market/seller/products/"),
+                api.get("/market/seller/orders/"),
+                api.get("/market/seller/stats/")
+            ]);
             setProducts(productsRes.data.results || productsRes.data);
-
-            // 2. Fetch Orders (For the new tab)
-            const ordersRes = await api.get("/market/seller/orders/");
             setOrders(ordersRes.data.results || ordersRes.data);
-
-            // 3. Fetch Real Stats
-            const statsRes = await api.get("/market/seller/stats/");
             setStats(statsRes.data);
-
         } catch (error) {
             console.log("Error fetching seller data", error);
         } finally {
@@ -36,251 +30,171 @@ export default function SellerDashboard() {
         }
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            fetchAllData();
-        }, [])
-    );
+    useFocusEffect(useCallback(() => { fetchAllData(); }, []));
 
-    const handleWithdraw = () => {
-        Alert.alert("Info", "Withdrawal system coming soon.");
+    // Fixes white background by resolving Cloudinary vs Local paths
+    const getImageUrl = (item: any) => {
+        const path = item.image || item.images?.[0]?.image;
+        if (!path) return 'https://via.placeholder.com/400';
+        if (path.startsWith('http')) return path;
+        return `http://172.20.10.7:8000/media/${path}`;
+    };
+
+    const handleDeleteProduct = (id: number) => {
+        Alert.alert("Delete Product", "This is permanent. Are you sure?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                    try {
+                        await api.delete(`/market/seller/products/${id}/delete/`);
+                        fetchAllData();
+                    } catch (e) {
+                        Alert.alert("Error", "Could not delete product.");
+                    }
+                }
+            }
+        ]);
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#111827" />
+        <View className="flex-1 bg-slate-50">
+            <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
 
-            {/* --- TOP HEADER (Dark Theme) --- */}
-            <View className="bg-gray-900 pt-12 pb-6 px-6 rounded-b-[30px] z-10">
+            {/* --- TOP HEADER --- */}
+            <View className="bg-slate-900 pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl">
                 <View className="flex-row justify-between items-center mb-6">
                     <View>
-                        <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider">Store Dashboard</Text>
-                        <Text className="text-white text-2xl font-bold mt-1">{stats?.store_name || "My Business"}</Text>
+                        <Text className="text-emerald-500 text-[10px] font-black uppercase tracking-[2px] mb-1">Live Management</Text>
+                        <Text className="text-white text-3xl font-black">{stats?.store_name || "Merchant"}</Text>
                     </View>
-
-                    {/* Close Button -> Goes back to Profile Tab */}
                     <TouchableOpacity
                         onPress={() => router.replace("/(tabs)/profile")}
-                        className="bg-gray-800 p-2 rounded-full"
+                        className="bg-slate-800 w-12 h-12 rounded-2xl items-center justify-center border border-slate-700"
                     >
-                        <Ionicons name="close" size={20} color="white" />
+                        <Ionicons name="close" size={24} color="white" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Wallet Card */}
-                <View className="bg-[#1DB954] p-5 rounded-2xl flex-row justify-between items-center shadow-lg shadow-green-900/20">
+                {/* Revenue Card */}
+                <View className="bg-emerald-500 p-6 rounded-3xl flex-row justify-between items-center shadow-lg shadow-emerald-900/20">
                     <View>
-                        <Text className="text-white/80 text-xs font-medium mb-1">Total Revenue</Text>
-                        <Text className="text-white text-3xl font-bold">₦{Number(stats?.revenue || 0).toLocaleString()}</Text>
+                        <Text className="text-emerald-100 text-[10px] font-black uppercase mb-1">Available Revenue</Text>
+                        <Text className="text-white text-4xl font-black">₦{Number(stats?.revenue || 0).toLocaleString()}</Text>
                     </View>
-                    <TouchableOpacity onPress={handleWithdraw} className="bg-white/20 px-4 py-2 rounded-lg">
-                        <Text className="text-white font-bold text-xs">Withdraw</Text>
+                    <TouchableOpacity className="bg-white/20 px-5 py-3 rounded-2xl">
+                        <Text className="text-white font-black text-xs uppercase tracking-widest">Payout</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
             <ScrollView
-                className="flex-1 px-6 -mt-4 pt-6"
+                className="flex-1 px-6 -mt-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
-                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchAllData} tintColor="#1DB954" />}
+                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchAllData} tintColor="#10B981" />}
             >
-
-                {/* --- QUICK ACTIONS GRID --- */}
-                <View className="flex-row gap-3 mb-4">
+                {/* --- NAVIGATION TABS --- */}
+                <View className="flex-row gap-3 mb-8">
                     <TouchableOpacity
                         onPress={() => setActiveTab('orders')}
-                        className={`flex-1 p-4 rounded-2xl shadow-sm border items-center ${activeTab === 'orders' ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-100'}`}
+                        className={`flex-1 p-5 rounded-3xl shadow-sm border items-center ${activeTab === 'orders' ? 'bg-white border-emerald-500' : 'bg-slate-100 border-transparent'}`}
                     >
-                        <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mb-2">
-                            <Ionicons name="receipt" size={20} color="#F97316" />
-                        </View>
-                        <Text className="text-gray-900 font-bold text-lg">{stats?.orders || orders.length}</Text>
-                        <Text className="text-gray-400 text-xs">Orders</Text>
+                        <Ionicons name="receipt" size={24} color={activeTab === 'orders' ? '#10B981' : '#94a3b8'} />
+                        <Text className={`font-black text-xl mt-2 ${activeTab === 'orders' ? 'text-slate-900' : 'text-slate-400'}`}>{orders.length}</Text>
+                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Orders</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={() => setActiveTab('products')}
-                        className={`flex-1 p-4 rounded-2xl shadow-sm border items-center ${activeTab === 'products' ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
+                        className={`flex-1 p-5 rounded-3xl shadow-sm border items-center ${activeTab === 'products' ? 'bg-white border-emerald-500' : 'bg-slate-100 border-transparent'}`}
                     >
-                        <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center mb-2">
-                            <Ionicons name="cube" size={20} color="#3B82F6" />
-                        </View>
-                        <Text className="text-gray-900 font-bold text-lg">{stats?.products || products.length}</Text>
-                        <Text className="text-gray-400 text-xs">Products</Text>
+                        <Ionicons name="cube" size={24} color={activeTab === 'products' ? '#10B981' : '#94a3b8'} />
+                        <Text className={`font-black text-xl mt-2 ${activeTab === 'products' ? 'text-slate-900' : 'text-slate-400'}`}>{products.length}</Text>
+                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Items</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={() => router.push("/seller/add-product")}
-                        className="flex-1 bg-gray-900 p-4 rounded-2xl shadow-sm items-center justify-center"
+                        className="flex-1 bg-slate-900 p-5 rounded-3xl shadow-xl items-center justify-center"
                     >
-                        <Ionicons name="add" size={28} color="white" />
-                        <Text className="text-white text-xs font-bold mt-1">Add New</Text>
+                        <Ionicons name="add" size={32} color="#10B981" />
+                        <Text className="text-white text-[10px] font-black uppercase tracking-widest mt-1">Add</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* --- NEW: MESSAGES BUTTON --- */}
-                <TouchableOpacity
-                    onPress={() => router.push("/seller/messages")}
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-row items-center justify-between mb-6"
-                >
-                    <View className="flex-row items-center">
-                        <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center mr-3">
-                            <Ionicons name="chatbubbles" size={20} color="#9333EA" />
-                        </View>
-                        <View>
-                            <Text className="text-gray-900 font-bold text-base">Customer Messages</Text>
-                            <Text className="text-gray-400 text-xs">View inquiries from buyers</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-                </TouchableOpacity>
-
-
-                {/* --- TAB SWITCHER --- */}
-                <View className="flex-row border-b border-gray-200 mb-4">
-                    <TouchableOpacity
-                        onPress={() => setActiveTab('products')}
-                        className={`pb-2 mr-6 border-b-2 ${activeTab === 'products' ? 'border-gray-900' : 'border-transparent'}`}
-                    >
-                        <Text className={`font-bold text-lg ${activeTab === 'products' ? 'text-gray-900' : 'text-gray-400'}`}>
-                            Inventory
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setActiveTab('orders')}
-                        className={`pb-2 border-b-2 ${activeTab === 'orders' ? 'border-gray-900' : 'border-transparent'}`}
-                    >
-                        <Text className={`font-bold text-lg ${activeTab === 'orders' ? 'text-gray-900' : 'text-gray-400'}`}>
-                            Orders <Text className="text-xs text-[#1DB954]">{orders.length > 0 ? `(${orders.length})` : ''}</Text>
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* --- PRODUCTS TAB --- */}
-                {activeTab === 'products' && (
-                    <View>
-                        {products.length === 0 && !isLoading ? (
-                            <View>
-                                {/* Alert Banner for New Sellers */}
-                                <TouchableOpacity
-                                    onPress={() => router.push("/seller/setup")}
-                                    className="bg-orange-50 border border-orange-200 p-4 rounded-xl mb-4 flex-row items-center"
-                                >
-                                    <Ionicons name="warning" size={24} color="#F97316" />
-                                    <View className="ml-3 flex-1">
-                                        <Text className="text-orange-800 font-bold">First Step: Setup Shop</Text>
-                                        <Text className="text-orange-700 text-xs mt-1">
-                                            You must name your store before you can add products. Tap here.
-                                        </Text>
+                {/* --- CONTENT SECTION --- */}
+                {activeTab === 'products' ? (
+                    <View className="gap-4">
+                        {products.map((item) => (
+                            <View key={item.id} className="bg-white p-4 rounded-[32px] flex-row shadow-sm border border-slate-100">
+                                <Image
+                                    source={{ uri: getImageUrl(item) }}
+                                    className="w-20 h-20 rounded-2xl bg-slate-50"
+                                    contentFit="cover"
+                                />
+                                <View className="flex-1 ml-4 justify-between">
+                                    <View className="flex-row justify-between items-start">
+                                        <Text className="font-black text-slate-900 text-base flex-1 mr-2" numberOfLines={1}>{item.name}</Text>
+                                        <View className="flex-row gap-4">
+                                            <TouchableOpacity onPress={() => router.push(`/seller/edit-product/${item.id}`)}>
+                                                <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => handleDeleteProduct(item.id)}>
+                                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color="#F97316" />
-                                </TouchableOpacity>
-
-                                {/* Empty State Illustration */}
-                                <View className="bg-white p-8 rounded-2xl items-center border border-dashed border-gray-200">
-                                    <View className="bg-gray-50 w-16 h-16 rounded-full items-center justify-center mb-4">
-                                        <Ionicons name="cube-outline" size={32} color="#9CA3AF" />
+                                    <View className="flex-row justify-between items-end">
+                                        <Text className="text-emerald-600 font-black text-lg">₦{Number(item.price).toLocaleString()}</Text>
+                                        <View className="bg-slate-50 px-2 py-1 rounded-lg">
+                                            <Text className="text-[10px] font-black text-slate-400 uppercase">{item.stock} Left</Text>
+                                        </View>
                                     </View>
-                                    <Text className="text-gray-900 font-bold mb-1">Your store is empty</Text>
-                                    <Text className="text-gray-500 text-center text-sm px-4">
-                                        After you set up your store, upload your first product here.
-                                    </Text>
                                 </View>
                             </View>
+                        ))}
+                    </View>
+                ) : (
+                    <View className="gap-4">
+                        {orders.length === 0 ? (
+                            <View className="items-center py-20">
+                                <Ionicons name="receipt-outline" size={64} color="#e2e8f0" />
+                                <Text className="text-slate-400 font-bold mt-4">No active orders</Text>
+                            </View>
                         ) : (
-                            <View className="gap-3">
-                                {products.map((item) => (
-                                    <View key={item.id} className="bg-white p-3 rounded-2xl flex-row shadow-sm border border-gray-100">
-                                        <Image
-                                            source={{ uri: item.image || item.images?.[0]?.image }}
-                                            className="w-24 h-24 rounded-xl bg-gray-100"
-                                            contentFit="cover"
-                                            transition={200}
-                                        />
-
-                                        <View className="flex-1 ml-3 justify-between py-1">
-                                            <View>
-                                                <View className="flex-row justify-between items-start">
-                                                    <Text className="font-bold text-gray-900 text-base flex-1 mr-2" numberOfLines={1}>{item.name}</Text>
-                                                    <TouchableOpacity>
-                                                        <Ionicons name="ellipsis-horizontal" size={20} color="#9CA3AF" />
-                                                    </TouchableOpacity>
-                                                </View>
-                                                <Text className="text-gray-500 text-xs mt-1" numberOfLines={2}>{item.description}</Text>
-                                            </View>
-
-                                            <View className="flex-row justify-between items-center mt-2">
-                                                <Text className="text-[#1DB954] font-bold text-lg">₦{Number(item.price).toLocaleString()}</Text>
-                                                <View className={`px-2 py-1 rounded-md ${item.stock > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                                                    <Text className={`text-xs font-bold ${item.stock > 0 ? 'text-green-700' : 'text-red-600'}`}>
-                                                        {item.stock > 0 ? `${item.stock} in Stock` : 'Out of Stock'}
-                                                    </Text>
-                                                </View>
-                                            </View>
+                            orders.map((order) => (
+                                <TouchableOpacity
+                                    key={order.id}
+                                    onPress={() => router.push(`/seller/orders/${order.id}`)}
+                                    activeOpacity={0.7}
+                                    className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100"
+                                >
+                                    <View className="flex-row justify-between items-center mb-4">
+                                        <Text className="font-black text-slate-900 text-lg">Order #{order.id}</Text>
+                                        <View className={`px-3 py-1 rounded-full ${order.delivery_status === 'ready_for_pickup' ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+                                            <Text className={`text-[10px] font-black uppercase tracking-tighter ${order.delivery_status === 'ready_for_pickup' ? 'text-emerald-700' : 'text-orange-700'}`}>
+                                                {order.delivery_status?.replace("_", " ")}
+                                            </Text>
                                         </View>
                                     </View>
-                                ))}
-                            </View>
+
+                                    <View className="flex-row justify-between items-end border-t border-slate-50 pt-4">
+                                        <View>
+                                            <Text className="text-slate-400 text-[10px] font-black uppercase mb-1">Customer</Text>
+                                            <Text className="text-slate-900 font-bold">{order.shipping_address_json?.full_name || "Guest"}</Text>
+                                        </View>
+                                        <View className="items-end">
+                                            <Text className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Value</Text>
+                                            <Text className="text-emerald-600 font-black text-lg">₦{Number(order.total_price).toLocaleString()}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))
                         )}
                     </View>
                 )}
-
-                {/* --- ORDERS TAB (NEW) --- */}
-                {activeTab === 'orders' && (
-                    <View>
-                        {orders.length === 0 ? (
-                            <View className="bg-white p-10 rounded-2xl items-center border border-dashed border-gray-200 mt-2">
-                                <Ionicons name="receipt-outline" size={40} color="#D1D5DB" />
-                                <Text className="text-gray-400 mt-4 text-center">No incoming orders yet.</Text>
-                            </View>
-                        ) : (
-                            <View className="gap-3">
-                                {orders.map((order) => (
-                                    <TouchableOpacity
-                                        key={order.id}
-                                        onPress={() => router.push(`/seller/orders/${order.id}`)}
-                                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 active:bg-gray-50"
-                                    >
-                                        <View className="flex-row justify-between mb-2">
-                                            <Text className="font-bold text-gray-900 text-base">Order #{order.id}</Text>
-                                            <View className={`px-2 py-1 rounded-full ${order.delivery_status === 'delivered' ? 'bg-green-100' :
-                                                order.delivery_status === 'ready_for_pickup' ? 'bg-blue-100' :
-                                                    order.delivery_status === 'picked_up' ? 'bg-purple-100' :
-                                                        'bg-orange-100'
-                                                }`}>
-                                                <Text className={`text-[10px] font-bold uppercase ${order.delivery_status === 'delivered' ? 'text-green-700' :
-                                                    order.delivery_status === 'ready_for_pickup' ? 'text-blue-700' :
-                                                        order.delivery_status === 'picked_up' ? 'text-purple-700' :
-                                                            'text-orange-700'
-                                                    }`}>
-                                                    {order.delivery_status?.replace("_", " ")}
-                                                </Text>
-                                            </View>
-                                        </View>
-
-                                        <Text className="text-gray-500 text-xs mb-3">
-                                            {new Date(order.created_at).toDateString()}
-                                        </Text>
-
-                                        <View className="bg-gray-50 p-3 rounded-xl mb-3">
-                                            <Text className="text-xs text-gray-500 font-bold uppercase mb-1">Ship To</Text>
-                                            <Text className="text-gray-900 font-medium text-sm" numberOfLines={1}>{order.shipping_address_json?.address}</Text>
-                                            <Text className="text-gray-600 text-xs">{order.shipping_address_json?.city}</Text>
-                                        </View>
-
-                                        <View className="flex-row justify-between items-center border-t border-gray-100 pt-3">
-                                            <Text className="text-gray-500 text-xs font-bold uppercase">Total Value</Text>
-                                            <Text className="font-bold text-lg text-gray-900">₦{Number(order.total_price).toLocaleString()}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                )}
-
             </ScrollView>
         </View>
     );
