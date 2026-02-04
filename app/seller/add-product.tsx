@@ -1,205 +1,219 @@
-import api from "@/lib/api";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+// import { MediaType } from "expo-image-picker"; // Trying to use string literals instead for safety
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
 
 export default function AddProductScreen() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [form, setForm] = useState({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        category: "",
+        video: null as string | null,
+        images: [] as string[],
+        is_ad: false, // NEW: Controlled by the toggle
+    });
 
-    // Form State
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [price, setPrice] = useState("");
-    const [stock, setStock] = useState("");
-    const [category, setCategory] = useState<number | null>(null);
-    const [image, setImage] = useState<string | null>(null);
-
-    // Data State
-    const [categories, setCategories] = useState<any[]>([]);
-
-    // 1. Fetch Categories on Load
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const res = await api.get("/market/categories/");
-                setCategories(res.data);
-                if (res.data.length > 0) setCategory(res.data[0].id);
-            } catch (e) {
-                console.log("Could not fetch categories, defaulting to 1");
-                setCategory(1);
+    const pickImages = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission Denied", "We need access to your gallery to upload photos.");
+                return;
             }
-        };
-        fetchCategories();
-    }, []);
 
-    // 2. Pick Image Function (Updated to remove deprecation warning)
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'], // Use modern array syntax
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 0.8,
-        });
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'] as any, // Lowercase is standard
+                allowsMultipleSelection: true,
+                quality: 0.8,
+            });
 
-        if (!result.canceled) {
-            setImage(result.assets[0].uri);
+            if (!result.canceled) {
+                const selectedUris = result.assets.map(asset => asset.uri);
+                setForm({ ...form, images: [...form.images, ...selectedUris] });
+            }
+        } catch (error) {
+            Alert.alert("Error", "Could not open image picker");
         }
     };
 
-    // 3. Updated Submit Function with Cloudinary and JSON payload
+    const pickVideo = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission Denied", "We need access to your gallery to upload videos.");
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['videos'] as any, // Lowercase is standard
+                allowsEditing: false,
+                aspect: [9, 16],
+                quality: 1,
+            });
+
+            if (!result.canceled) {
+                setForm({ ...form, video: result.assets[0].uri, is_ad: true });
+            }
+        } catch (error) {
+            Alert.alert("Error", "Could not open video picker: " + (error as any).message);
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!name || !price || !description || !stock || !image) {
-            Alert.alert("Missing Fields", "Please fill all fields and add an image.");
+        if (!form.name || !form.price || !form.description || form.images.length === 0) {
+            Alert.alert("Missing Info", "Please add a name, price, description, and at least one image.");
             return;
         }
 
-        setIsLoading(true);
-
         try {
-            // STEP 1: Upload the local image to Cloudinary
-            const cloudinaryUrl = await uploadToCloudinary(image);
+            setIsUploading(true);
+            setUploadProgress(10); // Start
 
-            // STEP 2: Prepare the JSON payload
-            // Using parseFloat and parseInt ensures correct data types for the backend
-            const productData = {
-                name,
-                description,
-                price: parseFloat(price),
-                stock: parseInt(stock),
-                currency: "NGN",
-                category: category || 1,
-                cloudinary_url: cloudinaryUrl, // The backend serializer extracts this
+            // Step 1: Upload Images to Cloudinary
+            const imageUrls = await Promise.all(
+                form.images.map(uri => uploadToCloudinary(uri, false))
+            );
+            setUploadProgress(40); // Images done
+
+            // Step 2: Upload Video to Cloudinary (If exists)
+            let videoUrl = null;
+            if (form.video) {
+                setUploadProgress(50); // Starting video
+                videoUrl = await uploadToCloudinary(form.video, true);
+                setUploadProgress(90); // Video finished
+            }
+
+            // Step 3: Send URLs to your Django Backend
+            const payload = {
+                ...form,
+                images: imageUrls, // Now an array of URLs, not files
+                video_url: videoUrl,
+                is_ad: !!videoUrl, // Automatically mark as ad if video exists
             };
 
-            // STEP 3: Send to Backend as JSON 
-            // We no longer use FormData or "Content-Type": "multipart/form-data"
-            await api.post("/market/seller/products/create/", productData);
+            await marketAPI.addProduct(payload);
 
-            Alert.alert("Success", "Product added successfully!", [
-                { text: "OK", onPress: () => router.back() }
-            ]);
-
-        } catch (error: any) {
-            console.log("Upload Error:", error.response?.data || error);
-            const errorMsg = error.response?.data
-                ? JSON.stringify(error.response.data)
-                : "Failed to upload product. Check your connection.";
-            Alert.alert("Error", errorMsg);
+            setUploadProgress(100);
+            Alert.alert("Globalink", "Product Launched Worldwide!");
+            router.back();
+        } catch (e: any) {
+            Alert.alert("Upload Failed", e.message || "An error occurred");
         } finally {
-            setIsLoading(false);
+            setIsUploading(false);
+            setUploadProgress(0);
         }
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center border-b border-gray-100">
-                <TouchableOpacity onPress={() => router.back()} className="p-2 bg-gray-100 rounded-full mr-4">
-                    <Ionicons name="arrow-back" size={20} color="black" />
+        <ScrollView className="flex-1 bg-white px-6 pt-12">
+            <View className="flex-row items-center justify-between mb-6">
+                <Text className="text-3xl font-black text-slate-900">New Product</Text>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="close-circle" size={32} color="#CBD5E1" />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold">Add New Product</Text>
             </View>
 
-            <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+            {/* --- Ad Visibility Toggle --- */}
+            {form.video && (
+                <View className="bg-emerald-50 p-5 rounded-[32px] border border-emerald-100 flex-row items-center justify-between mb-8">
+                    <View className="flex-1 pr-4">
+                        <Text className="text-emerald-900 font-black text-base">Global Discovery</Text>
+                        <Text className="text-emerald-600/70 text-xs font-medium">Show this video in the Live Ads feed to reach more customers.</Text>
+                    </View>
+                    <Switch
+                        trackColor={{ false: "#D1D5DB", true: "#10B981" }}
+                        thumbColor="white"
+                        onValueChange={(val) => setForm({ ...form, is_ad: val })}
+                        value={form.is_ad}
+                    />
+                </View>
+            )}
 
-                {/* Image Picker */}
+            {/* --- Media Pickers --- */}
+            <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-4">Media Assets</Text>
+            <View className="flex-row mb-8">
                 <TouchableOpacity
-                    onPress={pickImage}
-                    className="w-full h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 items-center justify-center mb-6 overflow-hidden"
+                    onPress={pickImages}
+                    className="w-20 h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl items-center justify-center mr-4"
                 >
-                    {image ? (
-                        <Image source={{ uri: image }} className="w-full h-full" resizeMode="cover" />
-                    ) : (
-                        <>
-                            <Ionicons name="camera-outline" size={40} color="#9CA3AF" />
-                            <Text className="text-gray-400 mt-2 font-medium">Tap to upload image</Text>
-                        </>
+                    <Ionicons name="images" size={24} color={form.images.length > 0 ? "#10B981" : "#94A3B8"} />
+                    {/* Optional: Show count if images are selected */}
+                    {form.images.length > 0 && (
+                        <View className="absolute -top-2 -right-2 bg-emerald-500 w-6 h-6 rounded-full items-center justify-center border-2 border-white">
+                            <Text className="text-white text-[10px] font-black">{form.images.length}</Text>
+                        </View>
                     )}
                 </TouchableOpacity>
 
-                {/* Form Fields */}
-                <View className="gap-4 mb-10">
-                    <View>
-                        <Text className="text-gray-700 font-medium mb-1 ml-1">Product Name</Text>
-                        <TextInput
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200"
-                            placeholder="e.g. iPhone 15 Pro"
-                            value={name}
-                            onChangeText={setName}
+                <TouchableOpacity
+                    onPress={pickVideo}
+                    className={`w-20 h-20 border-2 border-dashed rounded-3xl items-center justify-center ${form.video ? 'bg-slate-900 border-slate-900' : 'bg-slate-50 border-slate-200'}`}
+                >
+                    <Ionicons name="videocam" size={24} color={form.video ? "white" : "#94A3B8"} />
+                </TouchableOpacity>
+            </View>
+
+            {/* --- Form Fields --- */}
+            <TextInput
+                placeholder="Product Title"
+                className="bg-slate-50 p-5 rounded-2xl mb-4 font-bold"
+                onChangeText={(t) => setForm(prev => ({ ...prev, name: t }))}
+            />
+            <TextInput
+                placeholder="Price"
+                keyboardType="numeric"
+                className="bg-slate-50 p-5 rounded-2xl mb-4 font-bold"
+                onChangeText={(t) => setForm(prev => ({ ...prev, price: t }))}
+            />
+            <TextInput
+                placeholder="Description"
+                multiline
+                numberOfLines={4}
+                className="bg-slate-50 p-5 rounded-2xl mb-10 font-medium"
+                onChangeText={(t) => setForm(prev => ({ ...prev, description: t }))}
+            />
+
+            {/* Upload Progress Bar */}
+            {isUploading && (
+                <View className="mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                    <View className="flex-row justify-between mb-2">
+                        <Text className="text-slate-900 font-black text-xs uppercase">Uploading Media...</Text>
+                        <Text className="text-emerald-600 font-black text-xs">{uploadProgress}%</Text>
+                    </View>
+                    <View className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <View
+                            style={{ width: `${uploadProgress}%` }}
+                            className="h-full bg-emerald-500"
                         />
                     </View>
-
-                    <View className="flex-row gap-4">
-                        <View className="flex-1">
-                            <Text className="text-gray-700 font-medium mb-1 ml-1">Price (₦)</Text>
-                            <TextInput
-                                className="bg-gray-50 p-4 rounded-xl border border-gray-200"
-                                placeholder="0.00"
-                                keyboardType="numeric"
-                                value={price}
-                                onChangeText={setPrice}
-                            />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-gray-700 font-medium mb-1 ml-1">Stock</Text>
-                            <TextInput
-                                className="bg-gray-50 p-4 rounded-xl border border-gray-200"
-                                placeholder="Qty"
-                                keyboardType="numeric"
-                                value={stock}
-                                onChangeText={setStock}
-                            />
-                        </View>
-                    </View>
-
-                    <View>
-                        <Text className="text-gray-700 font-medium mb-1 ml-1">Description</Text>
-                        <TextInput
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-32"
-                            placeholder="Describe your product..."
-                            multiline
-                            textAlignVertical="top"
-                            value={description}
-                            onChangeText={setDescription}
-                        />
-                    </View>
-
-                    {/* Category Selector */}
-                    {categories.length > 0 && (
-                        <View>
-                            <Text className="text-gray-700 font-medium mb-2 ml-1">Category</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
-                                {categories.map((cat) => (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        onPress={() => setCategory(cat.id)}
-                                        className={`px-4 py-2 rounded-full border ${category === cat.id ? 'bg-black border-black' : 'bg-white border-gray-200'}`}
-                                    >
-                                        <Text className={category === cat.id ? 'text-white' : 'text-gray-700'}>{cat.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    )}
-
-                    <TouchableOpacity
-                        onPress={handleSubmit}
-                        disabled={isLoading}
-                        className="bg-[#1DB954] py-4 rounded-full items-center mt-4 shadow-lg shadow-green-200"
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <Text className="text-white font-bold text-lg">Create Listing</Text>
-                        )}
-                    </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+            )}
+
+            <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={isUploading}
+                className={`p-6 rounded-[28px] items-center shadow-xl mb-20 ${isUploading ? 'bg-slate-400' : 'bg-slate-900'}`}
+            >
+                {isUploading ? <ActivityIndicator color="white" /> : <Text className="text-white font-black text-lg">Launch Product</Text>}
+            </TouchableOpacity>
+        </ScrollView>
     );
 }

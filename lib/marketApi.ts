@@ -31,14 +31,40 @@ export const marketAPI = {
     /**
      * Fetch products with optional search and category filters
      */
-    getProducts: async (searchQuery: string = '', categoryId: number | null = null) => {
+    getProducts: async (searchQuery: string = '', categoryId: number | null = null, storeId: number | null = null) => {
         try {
             const params: any = {};
             if (searchQuery) params.search = searchQuery;
+            if (storeId) params.store_id = storeId;
             // Note: Backend might need to support category filtering specifically if not covered by 'search'
             // For now, filtering is done on frontend or via the generic search param if configured
 
             const response = await api.get('/market/products/', { params });
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    // --- MESSAGING ---
+    startConversation: async (receiverId: number, productId: number | null = null) => {
+        try {
+            const response = await api.post('/chat/start/', {
+                receiver_id: receiverId,
+                product_id: productId
+            });
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    /**
+     * Get single store details
+     */
+    getStoreById: async (id: number) => {
+        try {
+            const response = await api.get(`/market/stores/${id}/`);
             return response.data;
         } catch (error) {
             return handleApiError(error);
@@ -140,8 +166,21 @@ export const marketAPI = {
             const response = await api.get('/finance/wallet/');
             return response.data;
         } catch (error) {
-            throw error;
+            console.error("Wallet Fetch Error:", error);
+            // Return a default object so the UI doesn't crash
+            return {
+                balance: "0.00",
+                escrow_balance: "0.00",
+                account_number: "Error Loading",
+                bank_name: "Try Again Later"
+            };
         }
+    },
+
+    // Since WalletDetailView already includes history, this is optional but good for backup
+    getTransactions: async () => {
+        const response = await api.get('/finance/wallet/');
+        return response.data.transactions || [];
     },
 
     initiateDeposit: async (amount: number) => {
@@ -160,6 +199,24 @@ export const marketAPI = {
         } catch (error) {
             throw error;
         }
+    },
+
+    // MONNIFY: Verify Bank Account Name
+    verifyBankAccount: async (accountNumber: string, bankCode: string) => {
+        const response = await api.post('/finance/verify-bank/', {
+            account_number: accountNumber,
+            bank_code: bankCode
+        });
+        return response.data;
+    },
+
+    // MONNIFY: Process Withdrawal
+    initiateWithdrawal: async (amount: number, bankAccountId: number) => {
+        const response = await api.post('/finance/withdraw/', {
+            amount: amount,
+            bank_account_id: bankAccountId
+        });
+        return response.data;
     },
 
     confirmOrder: async (orderId: number) => {
@@ -220,58 +277,80 @@ export const marketAPI = {
     },
 
     addProduct: async (data: any) => {
+        // CHECK: If data has 'video_url' or images are already URLs, send as JSON
+        const isPreUploaded =
+            (data.images && data.images.length > 0 && typeof data.images[0] === 'string' && data.images[0].startsWith('http')) ||
+            data.video_url;
+
+        if (isPreUploaded) {
+            try {
+                // Send directly as JSON (Content-Type: application/json is default in api.ts)
+                const response = await api.post('/market/seller/products/add/', data);
+                return response.data;
+            } catch (error) {
+                // @ts-ignore
+                if (error.response) throw error.response.data;
+                throw error;
+            }
+        }
+
+        // --- FALLBACK (Old Way for direct file upload via backend) ---
         const formData = new FormData();
+
+        // Append text fields
         formData.append("name", data.name);
         formData.append("description", data.description);
         formData.append("price", data.price);
-        formData.append("stock", data.stock);
-        formData.append("category", data.category); // ID of category
+        formData.append("stock", data.stock || "1");
+        formData.append("category", data.category || "1");
+        formData.append("is_ad", "true"); // Automatically mark products with video as ads
 
-        if (data.image) {
-            // @ts-ignore
-            formData.append("image", {
-                uri: data.image,
-                name: "product.jpg",
-                type: "image/jpeg",
+        // Handle Images (Multi-part)
+        if (data.images && data.images.length > 0) {
+            data.images.forEach((uri: string, index: number) => {
+                // @ts-ignore
+                formData.append("images", {
+                    uri,
+                    name: `prod_img_${index}.jpg`,
+                    type: "image/jpeg",
+                });
             });
+        }
+
+        // Handle Video (Crucial for Requirement #1)
+        if (data.video) {
+            // @ts-ignore
+            formData.append("video", {
+                uri: data.video,
+                name: "seller_video.mp4",
+                type: "video/mp4",
+            });
+            formData.append("resource_type", "video");
         }
 
         try {
             const response = await api.post('/market/seller/products/add/', formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+                headers: {
+                    "Content-Type": undefined, // Explicitly unset default JSON header so Axios sets boundary
+                },
+                transformRequest: (data, headers) => {
+                    // @ts-ignore
+                    delete headers['Content-Type']; // Nuclear option to ensure no default leaks
+                    return data;
+                },
+                // Increase timeout for large video files (5 minutes)
+                timeout: 300000,
             });
             return response.data;
         } catch (error) {
-            // @ts-ignore
-            if (error.response) throw error.response.data;
-            throw error;
-        }
-    },
-    updateOrderStatus: async (orderId: number, status: 'shipped' | 'pending') => {
-        try {
-            const response = await api.post(`/market/seller/orders/${orderId}/update/`, { status });
-            return response.data;
-        } catch (error) {
-            // @ts-ignore
-            if (error.response) throw error.response.data;
+            console.error("Video Upload Error:", error);
             throw error;
         }
     },
 
-    // --- RIDER FUNCTIONS ---
-    getAvailableDeliveries: async () => {
-        try {
-            const response = await api.get('/market/rider/orders/available/');
-            return response.data;
-        } catch (error) { throw error; }
-    },
 
-    getRiderActiveDeliveries: async () => {
-        try {
-            const response = await api.get('/market/rider/orders/active/');
-            return response.data;
-        } catch (error) { throw error; }
-    },
+
+
 
     acceptDelivery: async (orderId: number) => {
         try {
@@ -286,11 +365,11 @@ export const marketAPI = {
 
     riderUpdateStatus: async (orderId: number, status: 'picked_up' | 'delivered', pin?: string) => {
         try {
-            const payload = { status, pin };
+            // The key must be 'pin' to match request.data.get('pin')
+            const payload = { status, pin: pin };
             const response = await api.post(`/market/rider/orders/${orderId}/update/`, payload);
             return response.data;
-        } catch (error) {
-            // @ts-ignore
+        } catch (error: any) {
             if (error.response) throw error.response.data;
             throw error;
         }
@@ -329,18 +408,25 @@ export const marketAPI = {
     },
 
     // --- CHAT FUNCTIONS ---
-    startChat: async (userId: number) => {
-        try {
-            const response = await api.post(`/market/chat/start/${userId}/`, {});
-            return response.data;
-        } catch (error) { throw error; }
+    startChat: async (userId: number, productId?: number) => {
+        const response = await api.post('/chat/start/', {
+            user_id: userId,
+            product_id: productId
+        });
+        return response.data;
     },
 
     sendMessage: async (conversationId: number, text: string) => {
-        try {
-            const response = await api.post(`/market/chat/${conversationId}/send/`, { text });
-            return response.data;
-        } catch (error) { throw error; }
+        const response = await api.post(`/chat/conversations/${conversationId}/send/`, { text });
+        return response.data;
+    },
+
+    getMessages: async (conversationId: number, lastId: number = 0) => {
+        // Yusuf: This sends /api/chat/conversations/5/messages/?last_id=10
+        const response = await api.get(`/chat/conversations/${conversationId}/messages/`, {
+            params: { last_id: lastId }
+        });
+        return response.data;
     },
 
     getConversations: async () => {
@@ -354,6 +440,82 @@ export const marketAPI = {
         const response = await api.get(`/market/seller/orders/${id}/`);
         return response.data;
     },
+
+    getAllStores: async () => {
+        try {
+            // Adjust the endpoint if your backend path is different
+            const response = await api.get('/market/stores/');
+            return response.data.results || response.data;
+        } catch (error) {
+            console.error("Error fetching stores:", error);
+            throw error;
+        }
+    },
+
+    getStoreDetail: async (id: string | number) => {
+        try {
+            const response = await api.get(`/market/stores/${id}/`);
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching store detail:", error);
+            throw error;
+        }
+    },
+    getVideoAds: async (pageNum: number = 1) => {
+        try {
+            const response = await api.get('/market/video-ads/', {
+                params: { page: pageNum }
+            });
+            // Django results usually come in a 'results' key if paginated
+            return response.data.results || response.data;
+        } catch (error) {
+            console.error("Video Ads Fetch Error:", error);
+            return [];
+        }
+    },
+
+
+
+    updateOrderStatus: async (orderId: number, status: string) => {
+        try {
+            // ENSURE THE TRAILING SLASH IS PRESENT
+            const response = await api.post(`/market/seller/orders/status-change/${orderId}/`, { status });
+            return response.data;
+        } catch (error: any) {
+            if (error.response) throw error.response.data;
+            throw error;
+        }
+    },
+
+    getReadyJobs: async () => {
+        try {
+            const response = await api.get('/market/seller/orders/ready-for-pickup/');
+            return response.data;
+        } catch (error) { throw error; }
+    },
+
+
+    // --- RIDER FUNCTIONS ---
+    getAvailableDeliveries: async () => {
+        try {
+            // Updated to match the backend path in Step 1
+            const response = await api.get('/market/rider/orders/available/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    getRiderActiveDeliveries: async () => {
+        try {
+            // Updated to match the backend path in Step 1
+            const response = await api.get('/market/rider/orders/active/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
 
 
 };

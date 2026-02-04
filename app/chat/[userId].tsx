@@ -14,6 +14,7 @@ export default function ChatScreen() {
     const [messages, setMessages] = useState<any[]>([]);
     const [chatTitle, setChatTitle] = useState("Loading...");
     const [inputText, setInputText] = useState("");
+    const [lastId, setLastId] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     const flatListRef = useRef<FlatList>(null);
@@ -31,6 +32,12 @@ export default function ChatScreen() {
             }
 
             setMessages(data.messages);
+
+            // Set initial lastId
+            if (data.messages && data.messages.length > 0) {
+                const maxId = data.messages[data.messages.length - 1].id;
+                setLastId(maxId);
+            }
         } catch (e) {
             console.log("Error loading chat:", e);
             setChatTitle("Chat");
@@ -39,19 +46,44 @@ export default function ChatScreen() {
         }
     };
 
+    // Yusuf: Optimized Polling function
+    const pollMessages = async () => {
+        if (!conversationId) return;
+
+        try {
+            // Only fetch messages newer than what we have
+            const newMessages = await marketAPI.getMessages(conversationId, lastId);
+
+            if (newMessages.length > 0) {
+                setMessages(prev => [...prev, ...newMessages]);
+                // Update the lastId to the ID of the very last message received
+                const maxId = newMessages[newMessages.length - 1].id;
+                setLastId(maxId);
+
+                // Auto scroll to bottom for new messages
+                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+            }
+        } catch (e) {
+            console.log("Polling error:", e);
+        }
+    };
+
     useEffect(() => {
         setMessages([]);
         setChatTitle("Loading...");
         setIsLoading(true);
+        setLastId(0);
 
         initChat();
 
+        // Yusuf: Use a 2-second interval for professional balance 
+        // between speed and server load on PythonAnywhere
         const interval = setInterval(() => {
-            initChat();
-        }, 3000);
+            pollMessages();
+        }, 2000);
 
         return () => clearInterval(interval);
-    }, [userId]);
+    }, [userId, conversationId, lastId]); // Dependencies are important!
 
     const handleSend = async () => {
         if (!inputText.trim() || !conversationId) return;
@@ -59,7 +91,7 @@ export default function ChatScreen() {
         const tempMsg = {
             id: Date.now(),
             text: inputText,
-            sender__id: user?.id,
+            sender__id: user?._id,
             sender__email: user?.email,
             created_at: new Date().toISOString()
         };
@@ -77,29 +109,15 @@ export default function ChatScreen() {
     };
 
     const renderMessage = ({ item }: { item: any }) => {
-        // 1. Check ID (Primary) OR Email (Fallback)
-        const isMe = (user?.id && String(item.sender__id) === String(user.id)) ||
-            (user?.email && item.sender__email === user.email);
+        // Yusuf: Check for 'id' and '_id' to be safe across different versions
+        const myId = (user as any)?.id || user?._id;
+        const senderId = item.sender_id || item.sender__id;
+        const isMe = senderId === myId;
 
         return (
-            <View className={`mb-2 flex-row ${isMe ? 'justify-end' : 'justify-start'}`}>
-                {/* STYLE CHANGE:
-                   - Me: Brand Green (#1DB954)
-                   - Them: Light Gray (gray-200) -> This is the "Standard" look
-                */}
-                <View className={`px-4 py-3 rounded-2xl max-w-[80%] ${isMe
-                    ? 'bg-[#1DB954] rounded-tr-none'
-                    : 'bg-gray-200 rounded-tl-none'
-                    }`}>
-
-                    <Text className={`text-base ${isMe ? 'text-white' : 'text-gray-900'}`}>
-                        {item.text}
-                    </Text>
-
-                    <Text className={`text-[10px] mt-1 text-right ${isMe ? 'text-green-100' : 'text-gray-500'}`}>
-                        {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                </View>
+            <View className={`p-3 rounded-2xl mb-2 max-w-[75%] ${isMe ? 'bg-[#1DB954] self-end rounded-tr-none' : 'bg-gray-200 self-start rounded-tl-none'
+                }`}>
+                <Text className={isMe ? 'text-white' : 'text-gray-800'}>{item.text}</Text>
             </View>
         );
     };

@@ -7,28 +7,40 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#1DB954", // spotify green
-          light: "#1ED760",
-          dark: "#1AA34A",
+          DEFAULT: "#329629", // Globalink Green
+          light: "#4ADE80",
+          dark: "#14532D",
+          container: "#DCFCE7", // Light green background
+        },
+        secondary: {
+          DEFAULT: "#1E293B", // Slate-800
+          light: "#94A3B8",   // Slate-400
+          dark: "#0F172A",    // Slate-900
         },
         background: {
-          DEFAULT: "#121212", // dark background
-          light: "#181818",
-          lighter: "#282828",
+          DEFAULT: "#F8FAFC", // Slate-50 (Light Mode Default)
+          dark: "#020617",    // Slate-950 (Dark Mode Default)
         },
         surface: {
-          DEFAULT: "#282828",
-          light: "#3E3E3E",
-        },
-        text: {
-          primary: "#FFFFFF",
-          secondary: "#B3B3B3",
-          tertiary: "#6A6A6A",
+          DEFAULT: "#FFFFFF",
+          dark: "#0F172A",
         },
         accent: {
-          DEFAULT: "#1DB954",
-          red: "#F44336",
-          yellow: "#FFC107",
+          DEFAULT: "#F59E0B", // Amber-500
+          hover: "#D97706",
+        },
+        error: {
+          DEFAULT: "#EF4444", // Red-500
+          light: "#FEE2E2",
+        },
+        success: {
+          DEFAULT: "#10B981", // Emerald-500
+          light: "#D1FAE5",
+        },
+        text: {
+          primary: "#0F172A",   // Slate-900
+          secondary: "#64748B", // Slate-500
+          disabled: "#CBD5E1",  // Slate-300
         },
       },
     },

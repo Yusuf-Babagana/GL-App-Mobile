@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -6,6 +7,7 @@ import { Alert, Modal, RefreshControl, ScrollView, StatusBar, Text, TextInput, T
 
 export default function RiderDashboard() {
     const router = useRouter();
+    const { logout } = useAuth();
     const [activeTab, setActiveTab] = useState<'available' | 'active'>('available');
     const [availableJobs, setAvailableJobs] = useState<any[]>([]);
     const [myJobs, setMyJobs] = useState<any[]>([]);
@@ -15,18 +17,27 @@ export default function RiderDashboard() {
     const [selectedJob, setSelectedJob] = useState<any>(null);
     const [pinModalVisible, setPinModalVisible] = useState(false);
     const [pin, setPin] = useState("");
+    const [wallet, setWallet] = useState<any>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [available, active] = await Promise.all([
+            const [available, active, walletData] = await Promise.all([
                 marketAPI.getAvailableDeliveries(),
-                marketAPI.getRiderActiveDeliveries()
+                marketAPI.getRiderActiveDeliveries(),
+                marketAPI.getWallet()
             ]);
-            setAvailableJobs(available.results || available);
+
+            const allAvailable = available.results || available;
+            const readyJobs = allAvailable.filter((job: any) => job.delivery_status === 'ready_for_pickup');
+            setAvailableJobs(readyJobs);
+
             setMyJobs(active.results || active);
+            setWallet(walletData);
+
+            console.log("DEBUG: Wallet balance fetched:", walletData.balance);
         } catch (e) {
-            console.log(e);
+            console.error("DEBUG: Error fetching dashboard data", e);
         } finally {
             setIsLoading(false);
         }
@@ -59,49 +70,86 @@ export default function RiderDashboard() {
 
     const handleDelivery = async () => {
         if (!pin || pin.length !== 4) {
-            Alert.alert("Error", "Please enter the valid 4-digit PIN provided by the buyer.");
+            Alert.alert("Error", "Please enter the valid 4-digit PIN.");
             return;
         }
         try {
             await marketAPI.riderUpdateStatus(selectedJob.id, 'delivered', pin);
             setPinModalVisible(false);
             setPin("");
-            Alert.alert("Success", "Delivery Complete! Funds released to your wallet.");
-            fetchData();
+
+            // --- NEW SUCCESS FEEDBACK ---
+            Alert.alert(
+                "Order Completed! ✅",
+                "₦1,500 has been added to your wallet. Great job!",
+                [{ text: "Awesome", onPress: () => fetchData() }]
+            );
+
         } catch (e: any) {
-            Alert.alert("Error", e.error || "Incorrect PIN or System Error.");
+            Alert.alert("Error", e.error || "Incorrect PIN. Please check with the buyer.");
         }
+    };
+
+    const handleLogout = () => {
+        Alert.alert("Logout", "Are you sure you want to log out?", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Logout", style: "destructive", onPress: logout }
+        ]);
     };
 
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#111827" />
+            <StatusBar barStyle="light-content" backgroundColor="#047857" />
 
             {/* Header */}
-            <View className="bg-gray-900 pt-12 pb-6 px-6 rounded-b-[32px] shadow-lg z-10">
-                <View className="flex-row justify-between items-center mb-4">
+            <View className="bg-emerald-700 pt-12 pb-6 px-6 rounded-b-[40px] shadow-2xl z-10">
+                <View className="flex-row justify-between items-start mb-6">
                     <View>
-                        <Text className="text-orange-400 text-xs font-bold uppercase tracking-widest">Logistic Partner</Text>
-                        <Text className="text-white text-3xl font-bold">Rider Hub</Text>
+                        <Text className="text-emerald-200 text-xs font-bold uppercase tracking-tighter">Logistic Partner</Text>
+                        <Text className="text-white text-3xl font-black">Rider Hub</Text>
                     </View>
-                    <TouchableOpacity onPress={() => router.replace("/(tabs)/profile")} className="bg-gray-800 p-2 rounded-full">
-                        <Ionicons name="close" size={24} color="white" />
+                    <View className="flex-row items-center">
+                        <TouchableOpacity
+                            onPress={() => router.push("/rider/settings")}
+                            className="bg-emerald-600 p-2.5 rounded-full mr-3"
+                        >
+                            <Ionicons name="settings-sharp" size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleLogout} className="bg-emerald-800 p-2.5 rounded-full">
+                            <Ionicons name="log-out-outline" size={22} color="#FECACA" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Wallet Card */}
+                <View className="bg-white/10 p-5 rounded-[28px] border border-white/20 flex-row justify-between items-center">
+                    <View>
+                        <Text className="text-emerald-100 text-xs font-bold uppercase">Available Balance</Text>
+                        <Text className="text-white text-3xl font-black mt-1">
+                            ₦{wallet ? Number(wallet.balance).toLocaleString() : "0.00"}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={() => router.push("/wallet")}
+                        className="bg-white px-4 py-2 rounded-2xl"
+                    >
+                        <Text className="text-emerald-700 font-bold text-xs">View Wallet</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Tab Switcher */}
-                <View className="flex-row bg-gray-800 p-1 rounded-xl mt-2">
+                <View className="flex-row bg-emerald-800 p-1 rounded-xl mt-6">
                     <TouchableOpacity
                         onPress={() => setActiveTab('available')}
-                        className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'available' ? 'bg-orange-500' : ''}`}
+                        className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'available' ? 'bg-white' : ''}`}
                     >
-                        <Text className={`font-bold ${activeTab === 'available' ? 'text-white' : 'text-gray-400'}`}>New Jobs ({availableJobs.length})</Text>
+                        <Text className={`font-bold ${activeTab === 'available' ? 'text-emerald-700' : 'text-emerald-200'}`}>New Jobs ({availableJobs.length})</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('active')}
-                        className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'active' ? 'bg-orange-500' : ''}`}
+                        className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'active' ? 'bg-white' : ''}`}
                     >
-                        <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>My Tasks ({myJobs.filter(j => j.delivery_status !== 'delivered').length})</Text>
+                        <Text className={`font-bold ${activeTab === 'active' ? 'text-emerald-700' : 'text-emerald-200'}`}>My Tasks ({myJobs.filter(j => j.delivery_status !== 'delivered').length})</Text>
                     </TouchableOpacity>
                 </View>
             </View>

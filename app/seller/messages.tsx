@@ -1,94 +1,75 @@
-import { marketAPI } from "@/lib/marketApi";
+import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { chatApi } from "@/lib/chatApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 
-export default function SellerMessagesScreen() {
-    const router = useRouter();
-    const [conversations, setConversations] = useState<any[]>([]);
+export default function SellerMessages() {
+    const [inbox, setInbox] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    const router = useRouter();
 
-    const loadChats = async () => {
+    const loadInbox = async () => {
         try {
-            const data = await marketAPI.getConversations();
-            setConversations(data);
-        } catch (error) {
-            console.log("Error fetching chats:", error);
+            const data = await chatApi.getInbox();
+            setInbox(data);
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     };
 
-    useEffect(() => {
-        loadChats();
-    }, []);
-
-    const renderItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
-            onPress={() => router.push(`/chat/${item.other_user_id}`)}
-            className="flex-row items-center p-4 bg-white border-b border-gray-100"
-        >
-            {/* Avatar */}
-            <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-4">
-                <Text className="text-blue-600 font-bold text-lg">
-                    {item.name.charAt(0).toUpperCase()}
-                </Text>
-            </View>
-
-            {/* Info */}
-            <View className="flex-1">
-                <View className="flex-row justify-between mb-1">
-                    <Text className="font-bold text-gray-900 text-base">{item.name}</Text>
-                    <Text className="text-xs text-gray-400">
-                        {new Date(item.timestamp).toLocaleDateString()}
-                    </Text>
-                </View>
-                <Text numberOfLines={1} className="text-gray-500 text-sm">
-                    {item.last_message}
-                </Text>
-            </View>
-
-            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-        </TouchableOpacity>
-    );
+    useEffect(() => { loadInbox(); }, []);
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-            {/* Header */}
-            <View className="p-4 bg-white border-b border-gray-200 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-3">
-                    <Ionicons name="arrow-back" size={24} color="black" />
+        <ScreenWrapper bg="bg-white">
+            <View className="px-6 py-4 flex-row justify-between items-center border-b border-gray-50">
+                <Text className="text-2xl font-bold text-gray-900">Customer Chats</Text>
+                <TouchableOpacity onPress={loadInbox}>
+                    <Ionicons name="refresh" size={20} color="#64748B" />
                 </TouchableOpacity>
-                <Text className="font-bold text-xl">Messages</Text>
             </View>
 
             {loading ? (
-                <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#1DB954" />
-                </View>
+                <ActivityIndicator className="mt-20" color="#3B82F6" />
             ) : (
                 <FlatList
-                    data={conversations}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id.toString()}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={() => {
-                            setRefreshing(true);
-                            loadChats();
-                        }} />
-                    }
+                    data={inbox}
+                    contentContainerStyle={{ paddingBottom: 40 }}
                     ListEmptyComponent={
-                        <View className="items-center mt-20">
-                            <Ionicons name="chatbubbles-outline" size={64} color="#D1D5DB" />
-                            <Text className="text-gray-400 mt-4">No messages yet</Text>
+                        <View className="items-center mt-20 px-10">
+                            <Ionicons name="chatbubbles-outline" size={60} color="#CBD5E1" />
+                            <Text className="text-gray-400 text-center mt-4 font-medium">
+                                No active inquiries yet. High-quality product videos attract more buyers!
+                            </Text>
                         </View>
                     }
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() => router.push({
+                                pathname: `/chat/${item.id}`,
+                                params: { name: item.other_user_name }
+                            })}
+                            className="flex-row items-center p-4 mx-4 my-1 bg-white rounded-2xl border border-gray-100"
+                        >
+                            <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center">
+                                <Text className="text-blue-600 font-bold">{item.other_user_name[0]}</Text>
+                            </View>
+                            <View className="flex-1 ml-4">
+                                <View className="flex-row justify-between">
+                                    <Text className="font-bold text-gray-900">{item.other_user_name}</Text>
+                                    <Text className="text-gray-400 text-[10px]">{item.time}</Text>
+                                </View>
+                                <Text className="text-gray-500 text-sm mt-1" numberOfLines={1}>
+                                    {item.last_message}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
                 />
             )}
-        </SafeAreaView>
+        </ScreenWrapper>
     );
 }

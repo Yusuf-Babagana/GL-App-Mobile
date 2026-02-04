@@ -11,24 +11,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.mobile",
-      "statusBarHidden": false, // Add this
-      "statusBarStyle": "dark-content" // Add this
+      "statusBarHidden": false,
+      "statusBarStyle": "dark-content"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "edgeToEdgeEnabled": false, // Change this to false
-      "softwareKeyboardLayoutMode": "resize", // Add this
-      "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.mobile",
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "statusBar": {
-        "backgroundColor": "#FFFFFF", // Add this
-        "translucent": false, // Add this
-        "barStyle": "dark-content" // Add this
+        "backgroundColor": "#FFFFFF",
+        "translucent": false,
+        "barStyle": "dark-content"
       }
     },
     "web": {
@@ -57,7 +53,8 @@
           "organization": "codesistency-gs"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

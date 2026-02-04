@@ -1,8 +1,11 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/services/auth";
 import { Link } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const ROLES = [
     { id: 'buyer', label: 'Buyer', desc: 'Shop for items' },
@@ -12,7 +15,7 @@ const ROLES = [
 ];
 
 export default function RegisterScreen() {
-    const { login } = useAuth();
+    const { setSession } = useAuth();
     const [form, setForm] = useState({
         full_name: "",
         email: "",
@@ -41,7 +44,7 @@ export default function RegisterScreen() {
             });
 
             // 3. Save Session (AuthContext handles the redirect based on role)
-            await login(loginData.access, loginData.refresh);
+            await setSession(loginData.access, loginData.refresh);
 
         } catch (error: any) {
             console.error("Registration/Login Error:", error);
@@ -55,23 +58,23 @@ export default function RegisterScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white">
+        <ScreenWrapper>
             <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 50 }}>
                 <Text className="text-3xl font-bold text-gray-900 mb-2">Join Globalink</Text>
-                <Text className="text-gray-500 mb-6">Select your primary goal</Text>
+                <Text className="text-gray-500 mb-8 text-base">Select your primary goal to get started</Text>
 
                 {/* Role Selection Grid */}
-                <View className="flex-row flex-wrap gap-3 mb-6">
+                <View className="flex-row flex-wrap gap-3 mb-8">
                     {ROLES.map((role) => (
                         <TouchableOpacity
                             key={role.id}
                             onPress={() => setForm({ ...form, role: role.id })}
-                            className={`w-[48%] p-3 rounded-xl border ${form.role === role.id
-                                ? "bg-green-50 border-[#1DB954]"
-                                : "bg-white border-gray-200"
+                            className={`w-[48%] p-4 rounded-xl border-2 ${form.role === role.id
+                                ? "bg-primary/5 border-primary"
+                                : "bg-gray-50 border-gray-100"
                                 }`}
                         >
-                            <Text className={`font-bold ${form.role === role.id ? "text-[#1DB954]" : "text-gray-900"}`}>
+                            <Text className={`font-bold text-lg mb-1 ${form.role === role.id ? "text-primary" : "text-gray-900"}`}>
                                 {role.label}
                             </Text>
                             <Text className="text-xs text-gray-500">{role.desc}</Text>
@@ -80,67 +83,56 @@ export default function RegisterScreen() {
                 </View>
 
                 {/* Input Fields */}
-                <View className="gap-4">
-                    <View>
-                        <Text className="text-gray-700 mb-1 ml-1 font-medium">Full Name</Text>
-                        <TextInput
-                            placeholder="e.g. John Doe"
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-base"
-                            value={form.full_name}
-                            onChangeText={(t) => setForm({ ...form, full_name: t })}
-                        />
-                    </View>
+                <View>
+                    <Input
+                        label="Full Name"
+                        placeholder="e.g. John Doe"
+                        value={form.full_name}
+                        onChangeText={(t) => setForm({ ...form, full_name: t })}
+                    />
 
-                    <View>
-                        <Text className="text-gray-700 mb-1 ml-1 font-medium">Email Address</Text>
-                        <TextInput
-                            placeholder="e.g. john@example.com"
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-base"
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            value={form.email}
-                            onChangeText={(t) => setForm({ ...form, email: t })}
-                        />
-                    </View>
+                    <Input
+                        label="Email Address"
+                        placeholder="john@example.com"
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        value={form.email}
+                        onChangeText={(t) => setForm({ ...form, email: t })}
+                    />
 
-                    <View>
-                        <Text className="text-gray-700 mb-1 ml-1 font-medium">Phone Number</Text>
-                        <TextInput
-                            placeholder="e.g. +234..."
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-base"
-                            keyboardType="phone-pad"
-                            value={form.phone_number}
-                            onChangeText={(t) => setForm({ ...form, phone_number: t })}
-                        />
-                    </View>
+                    <Input
+                        label="Phone Number"
+                        placeholder="+234..."
+                        keyboardType="phone-pad"
+                        value={form.phone_number}
+                        onChangeText={(t) => setForm({ ...form, phone_number: t })}
+                    />
 
-                    <View>
-                        <Text className="text-gray-700 mb-1 ml-1 font-medium">Password</Text>
-                        <TextInput
-                            placeholder="Min 6 characters"
-                            className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-base"
-                            secureTextEntry
-                            value={form.password}
-                            onChangeText={(t) => setForm({ ...form, password: t })}
-                        />
-                    </View>
+                    <Input
+                        label="Password"
+                        placeholder="Min 6 characters"
+                        secureTextEntry
+                        value={form.password}
+                        onChangeText={(t) => setForm({ ...form, password: t })}
+                        containerStyle="mb-6"
+                    />
 
-                    <TouchableOpacity
+                    <Button
+                        title="Create Account"
                         onPress={handleRegister}
-                        disabled={isLoading}
-                        className="bg-[#1DB954] py-4 rounded-full items-center mt-4"
-                    >
-                        {isLoading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Create Account</Text>}
-                    </TouchableOpacity>
+                        loading={isLoading}
+                        size="lg"
+                        className="mb-4"
+                    />
                 </View>
 
-                <View className="flex-row justify-center mt-8">
+                <View className="flex-row justify-center mt-6">
                     <Text className="text-gray-500">Already have an account? </Text>
                     <Link href="/(auth)/login" asChild>
-                        <TouchableOpacity><Text className="text-[#1DB954] font-bold">Sign In</Text></TouchableOpacity>
+                        <TouchableOpacity><Text className="text-primary font-bold">Sign In</Text></TouchableOpacity>
                     </Link>
                 </View>
             </ScrollView>
-        </View>
+        </ScreenWrapper>
     );
 }

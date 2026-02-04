@@ -1,41 +1,41 @@
+import { useAuth } from "@/context/AuthContext";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
-export default function SellerOrderDetailScreen() {
+export default function OrderDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const { userRole } = useAuth();
     const [order, setOrder] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // We reuse getOrderById because the serializer sends the same data structure
-    // But we need to make sure the backend allows sellers to view specific orders via ID
-    // Note: For now, we will assume the seller fetches it via the same endpoint or the list data passed via params.
-    // To be robust, let's fetch it freshly.
-
     const fetchOrder = async () => {
+        // Safety: Don't call the API if ID is not a valid number
+        if (!id || isNaN(Number(id))) {
+            console.log("DEBUG: ID is NaN, skipping fetch");
+            return;
+        }
+
         try {
-            // We will filter from the list API for now to save creating a new endpoint, 
-            // or effectively we can use the existing BuyerOrderDetail if we relax permissions, 
-            // but let's stick to using the list filter logic on the client for MVP speed 
-            // OR simply implement a specific SellerOrderDetail endpoint. 
-            // Let's TRY using the ID directly. If it fails, we fix the backend.
-            // Actually, let's use a quick trick: fetch all seller orders and find this one.
-            const orders = await marketAPI.getSellerOrders();
-            const found = (orders.results || orders).find((o: any) => o.id === Number(id));
-            setOrder(found);
+            setIsLoading(true);
+            const data = await marketAPI.getOrderById(Number(id));
+            setOrder(data);
         } catch (e) {
-            console.log("Error", e);
+            console.log("Error fetching order:", e);
+            // Alert.alert("Error", "Could not load order details.");
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchOrder();
+        if (id && id !== 'NaN') {
+            fetchOrder();
+        }
     }, [id]);
 
     const markAsShipped = async () => {
@@ -91,6 +91,32 @@ export default function SellerOrderDetailScreen() {
 
             <ScrollView className="flex-1 px-6 pt-6">
 
+                {/* Secure Delivery PIN Card */}
+
+
+
+                {/* Rider Information & Contact Card */}
+                {order.rider && (
+                    <View className="bg-white p-5 rounded-3xl mt-4 shadow-sm border border-gray-100 flex-row items-center justify-between">
+                        <View className="flex-row items-center">
+                            <View className="bg-emerald-100 p-3 rounded-full">
+                                <Ionicons name="bicycle" size={24} color="#059669" />
+                            </View>
+                            <View className="ml-4">
+                                <Text className="text-gray-400 text-xs font-bold uppercase">Your Rider</Text>
+                                <Text className="text-gray-900 font-bold text-lg">{order.rider_name || "Kano Partner"}</Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => Linking.openURL(`tel:${order.rider_phone || '0800000000'}`)}
+                            className="bg-emerald-500 p-3 rounded-2xl"
+                        >
+                            <Ionicons name="call" size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Shipping Address Card */}
                 <View className="bg-white p-5 rounded-2xl mb-4 shadow-sm border border-gray-100">
                     <View className="flex-row items-center mb-3">
@@ -123,8 +149,8 @@ export default function SellerOrderDetailScreen() {
                 <View className="h-24" />
             </ScrollView>
 
-            {/* Action Button */}
-            {order.delivery_status === 'pending' && (
+            {/* Action Button - ONLY FOR SELLERS */}
+            {userRole === 'seller' && order.delivery_status === 'pending' && (
                 <View className="absolute bottom-0 w-full p-6 bg-white border-t border-gray-100">
                     <TouchableOpacity
                         onPress={markAsShipped}

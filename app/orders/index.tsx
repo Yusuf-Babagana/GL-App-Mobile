@@ -2,7 +2,7 @@ import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
 export default function OrderListScreen() {
     const router = useRouter();
@@ -44,7 +44,16 @@ export default function OrderListScreen() {
             <View className="flex-row justify-between items-center">
                 <Text className="text-[#1DB954] font-bold text-xl">₦{Number(item.total_price).toLocaleString()}</Text>
                 <TouchableOpacity
-                    onPress={() => router.push(`/orders/${item.id}`)}
+                    onPress={() => {
+                        // Ensure item.id exists and is a valid number before pushing
+                        const orderId = item?.id;
+                        if (orderId && !isNaN(orderId)) {
+                            router.push(`/orders/${orderId}`);
+                        } else {
+                            console.error("DEBUG: Attempted to navigate with invalid ID:", orderId);
+                            Alert.alert("Error", "Order ID is invalid. Please refresh.");
+                        }
+                    }}
                     className="bg-gray-900 px-4 py-2 rounded-xl flex-row items-center"
                 >
                     <Text className="text-white text-xs font-bold mr-1">Details</Text>

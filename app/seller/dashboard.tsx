@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -6,6 +7,7 @@ import { useCallback, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
 export default function SellerDashboard() {
+    const { logout } = useAuth();
     const [products, setProducts] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
@@ -65,16 +67,26 @@ export default function SellerDashboard() {
             {/* --- TOP HEADER --- */}
             <View className="bg-slate-900 pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl">
                 <View className="flex-row justify-between items-center mb-6">
-                    <View>
+                    <View className="flex-1 mr-4">
                         <Text className="text-emerald-500 text-[10px] font-black uppercase tracking-[2px] mb-1">Live Management</Text>
-                        <Text className="text-white text-3xl font-black">{stats?.store_name || "Merchant"}</Text>
+                        <Text className="text-white text-3xl font-black" numberOfLines={1}>{stats?.store_name || "Merchant"}</Text>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => router.replace("/(tabs)/profile")}
-                        className="bg-slate-800 w-12 h-12 rounded-2xl items-center justify-center border border-slate-700"
-                    >
-                        <Ionicons name="close" size={24} color="white" />
-                    </TouchableOpacity>
+
+                    <View className="flex-row gap-3">
+                        <TouchableOpacity
+                            onPress={logout}
+                            className="bg-red-500/10 w-12 h-12 rounded-2xl items-center justify-center border border-red-500/20"
+                        >
+                            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.replace("/(tabs)")}
+                            className="bg-slate-800 w-12 h-12 rounded-2xl items-center justify-center border border-slate-700"
+                        >
+                            <Ionicons name="storefront-outline" size={24} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Revenue Card */}

@@ -19,3 +19,11 @@ export const getStatusColor = (status: string) => {
       return "#666";
   }
 };
+
+export const getOptimizedImageUrl = (url: string | null | undefined) => {
+  if (!url) return "https://via.placeholder.com/400";
+  if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+    return url.replace("/upload/", "/upload/q_auto,f_auto/");
+  }
+  return url;
+};

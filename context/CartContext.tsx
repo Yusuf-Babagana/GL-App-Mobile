@@ -15,6 +15,7 @@ interface CartItem {
 interface CartContextType {
     cartItems: CartItem[];
     cartTotal: number;
+    cartCount: number;
     isLoading: boolean;
     addToCart: (productId: number, quantity?: number) => Promise<void>;
     removeFromCart: (itemId: number) => Promise<void>;
@@ -80,11 +81,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
     return (
         <CartContext.Provider
             value={{
                 cartItems,
                 cartTotal,
+                cartCount,
                 isLoading,
                 addToCart,
                 removeFromCart,

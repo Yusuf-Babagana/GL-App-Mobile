@@ -1,15 +1,22 @@
+import { Button } from "@/components/ui/Button";
+import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { chatApi } from "@/lib/chatApi";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+const { width } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { isSignedIn } = useAuth(); // Get auth state
 
   const [product, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,15 +31,41 @@ export default function ProductDetailScreen() {
   }, [id]);
 
   const handleAddToCart = async () => {
+    // Guest Mode Check
+    if (!isSignedIn) {
+      Alert.alert(
+        "Login Required",
+        "You need to sign in to purchase items.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Login", onPress: () => router.push("/(auth)/login") }
+        ]
+      );
+      return;
+    }
+
     setAddingToCart(true);
     try {
       await addToCart(product.id, quantity);
-      Alert.alert("Success", "Added to cart", [
-        { text: "Continue Shopping", style: "cancel" },
-        { text: "Go to Cart", onPress: () => router.push("/cart") }
-      ]);
+
+      // Fly-to-Cart Logic
+      Alert.alert(
+        "Added to Cart! 🛒",
+        `${product.name} is ready for checkout.`,
+        [
+          {
+            text: "Keep Browsing",
+            style: "cancel"
+          },
+          {
+            text: "View Cart",
+            onPress: () => router.push("/cart"),
+            style: "default"
+          }
+        ]
+      );
     } catch (error) {
-      Alert.alert("Error", "Could not add to cart");
+      Alert.alert("Error", "Could not add to cart. Please try again.");
     } finally {
       setAddingToCart(false);
     }
@@ -49,26 +82,37 @@ export default function ProductDetailScreen() {
   if (!product) return <View className="flex-1 bg-white" />;
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-
+    <ScreenWrapper safeAreaTop={false}>
       {/* Header (Absolute) */}
       <View className="absolute top-12 left-6 z-10">
-        <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 bg-white/80 rounded-full items-center justify-center shadow-sm backdrop-blur-md">
-          <Ionicons name="arrow-back" size={24} color="black" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 bg-white/90 rounded-full items-center justify-center shadow-sm backdrop-blur-md border border-gray-100"
+        >
+          <Ionicons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Large Image */}
+        {/* Image Gallery */}
         <View className="w-full h-96 bg-gray-100 relative">
-          <Image
-            source={{ uri: product.image || product.images?.[0]?.image }}
-            className="w-full h-full"
-            contentFit="cover"
+          <FlatList
+            data={product.images && product.images.length > 0 ? product.images : [{ image: product.image }]}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item.image || item }}
+                style={{ width: width, height: 384 }} // 384 is h-96
+                contentFit="cover"
+              />
+            )}
           />
           {/* Curve divider */}
-          <View className="absolute -bottom-1 w-full h-6 bg-white rounded-t-3xl" />
+          <View className="absolute -bottom-1 w-full h-6 bg-white rounded-t-3xl ponter-events-none" />
         </View>
 
         <View className="px-6 pt-2">
@@ -80,10 +124,28 @@ export default function ProductDetailScreen() {
               <Text className="text-gray-500 font-medium ml-2">{product.store?.name || "Official Store"}</Text>
             </View>
 
+            {/* Location Badge */}
+            <View className="flex-row items-center mt-1 mb-2">
+              <Ionicons name="location" size={12} color="#9CA3AF" />
+              <Text className="text-gray-400 text-xs ml-1">Ships from {product.store?.location || "Kano, Nigeria"}</Text>
+            </View>
+
             {/* Chat Button (Only shows if owner_id exists) */}
             {product.store?.owner_id && (
               <TouchableOpacity
-                onPress={() => router.push(`/chat/${product.store.owner_id}`)}
+                onPress={async () => {
+                  try {
+                    const data = await chatApi.startConversation(product.store.owner_id, product.id);
+
+                    // Pass the conversation ID and the Store Name to the next screen
+                    router.push({
+                      pathname: "/chat/[userId]",
+                      params: { userId: product.store.owner_id, name: product.store.name }
+                    });
+                  } catch (e: any) {
+                    Alert.alert("Chat Error", e.message || "Could not start conversation");
+                  }
+                }}
                 className="bg-blue-50 px-3 py-1.5 rounded-full flex-row items-center"
               >
                 <Ionicons name="chatbubble-ellipses" size={16} color="#3B82F6" />
@@ -97,6 +159,25 @@ export default function ProductDetailScreen() {
 
           {/* Divider */}
           <View className="h-[1px] bg-gray-100 w-full mb-6" />
+
+          {/* Related Video */}
+          {product.video_url && (
+            <View className="mb-6">
+              <Text className="text-gray-900 font-bold text-lg mb-3">Product Video</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/live')}
+                className="w-full h-48 rounded-2xl overflow-hidden bg-black items-center justify-center relative"
+              >
+                <Image
+                  source={{ uri: product.image }}
+                  className="w-full h-full opacity-60"
+                />
+                <View className="absolute bg-white/20 p-4 rounded-full backdrop-blur-md">
+                  <Ionicons name="play" size={32} color="white" />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <Text className="text-gray-900 font-bold text-lg mb-2">Description</Text>
           <Text className="text-gray-500 leading-6 text-base">{product.description}</Text>
@@ -124,22 +205,17 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* Add Button */}
-          <TouchableOpacity
-            onPress={handleAddToCart}
-            disabled={addingToCart}
-            className="flex-1 bg-[#1DB954] h-14 rounded-xl flex-row items-center justify-center shadow-lg shadow-green-200"
-          >
-            {addingToCart ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <>
-                <Ionicons name="cart" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text className="text-white font-bold text-lg">Add to Cart</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View className="flex-1">
+            <Button
+              title="Add to Cart"
+              onPress={handleAddToCart}
+              loading={addingToCart}
+              icon={<Ionicons name="cart" size={20} color="white" />}
+              className="shadow-lg shadow-green-200"
+            />
+          </View>
         </View>
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }

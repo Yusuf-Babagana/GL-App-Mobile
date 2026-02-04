@@ -1,22 +1,15 @@
-import api from "@/lib/api"; // Added for delete functionality
+import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function MarketScreen() {
   const router = useRouter();
+  const { isSignedIn, userRole } = useAuth(); // Accessing global auth state
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -27,11 +20,11 @@ export default function MarketScreen() {
     try {
       setIsLoading(true);
       const [prodData, catData] = await Promise.all([
-        marketAPI.getProducts(searchQuery),
+        marketAPI.getProducts(searchQuery, selectedCategory),
         marketAPI.getCategories()
       ]);
       setProducts(prodData.results || prodData);
-      setCategories(catData);
+      setCategories(catData.results || catData);
     } catch (e) {
       console.log("Fetch Error:", e);
     } finally {
@@ -39,104 +32,117 @@ export default function MarketScreen() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => { fetchData(); }, [searchQuery])
-  );
-
-  // Function to handle vendor product deletion
-  const handleDelete = (productId: number) => {
-    Alert.alert(
-      "Delete Product",
-      "Are you sure you want to remove this item from your store?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/market/seller/products/${productId}/delete/`);
-              Alert.alert("Success", "Product removed.");
-              fetchData();
-            } catch (e: any) {
-              const msg = e.response?.status === 403
-                ? "You can only delete your own products."
-                : "Delete failed.";
-              Alert.alert("Error", msg);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const filteredProducts = selectedCategory
-    ? products.filter(p => p.category === selectedCategory || p.category?.id === selectedCategory)
-    : products;
+  useFocusEffect(useCallback(() => { fetchData(); }, [searchQuery, selectedCategory]));
 
   const renderProduct = ({ item }: { item: any }) => {
-    if (!item) return null;
+    // Yusuf, we prioritize the new 'image' field we just created in the Serializer
+    const rawPath = item.image || (item.images?.length > 0 ? item.images[0].image : null);
 
-    // 1. Get raw path from the backend JSON
-    const rawPath = item.images?.[0]?.image;
-
-    // 2. Logic to build the final URI (Cloudinary vs Local)
     const getImageUrl = (path: string) => {
-      if (!path) return 'https://via.placeholder.com/400';
-      if (path.startsWith('http')) return path; // Use Cloudinary directly
-      return `http://172.20.10.7:8000/media/${path}`; // Fix local paths
+      // Current Backend IP from your logs
+      const BASE_IP = "172.20.10.7";
+
+      if (!path || path === "undefined" || path === "null") {
+        // This is the source of the headphones!
+        return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=500';
+      }
+
+      // If it's a full Cloudinary URL
+      if (path.startsWith('http')) return path;
+
+      // If it's a local Django path
+      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+      return `http://${BASE_IP}:8000/media/${cleanPath}`;
     };
 
-    const finalImageUri = getImageUrl(rawPath);
+    const finalUrl = getImageUrl(rawPath);
+
+    // This log will now show the actual URL instead of 'undefined'
+    console.log(`Product: ${item.name} | Image URL: ${finalUrl}`);
+
+    // Function to handle the chat logic
+    const handleChatPress = async () => {
+      console.log("Chat pressed for item:", item.id);
+
+      if (!isSignedIn) {
+        Alert.alert("Login Required", "Please login to chat with sellers", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Login", onPress: () => router.push("/(auth)/login") }
+        ]);
+        return;
+      }
+
+      if (!item.store || !item.store.owner_id) {
+        Alert.alert("Error", "Store information is missing for this product.");
+        return;
+      }
+
+      try {
+        console.log("Starting conversation with owner:", item.store.owner_id);
+        // We use marketAPI which calls the correct /chat/start/ endpoint with user_id & product_id
+        const data = await marketAPI.startChat(item.store.owner_id, item.id);
+        console.log("Conversation started:", data);
+
+        router.push({
+          pathname: "/chat/[userId]",
+          params: { userId: item.store.owner_id, name: item.store.name }
+        });
+      } catch (e: any) {
+        console.log("Error starting chat:", e);
+        Alert.alert("Chat Error", e.message || "Failed to start chat. Check connection.");
+      }
+    };
 
     return (
       <TouchableOpacity
         onPress={() => router.push(`/product/${item.id}`)}
-        activeOpacity={0.9}
-        className="flex-1 m-2 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+        className="w-[48%] mb-4 bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm"
       >
-        <View className="h-44 bg-gray-100 w-full relative">
+        <View style={styles.imageWrapper}>
           <Image
-            source={{ uri: finalImageUri }}
-            className="w-full h-full"
+            source={{ uri: finalUrl }}
+            style={StyleSheet.absoluteFill}
             contentFit="cover"
-            transition={300}
+            transition={500}
+            cachePolicy="disk"
+            // This prevents the "black box" look while loading
+            placeholder={{ blurhash: "L6PZf6ay01ay~qj[00ay00ayj[ay" }}
+            onError={() => console.log("Failed to load image:", finalUrl)}
           />
-          {item.stock <= 0 && (
-            <View className="absolute top-3 right-3 bg-black/60 px-2 py-1 rounded-lg">
-              <Text className="text-white text-[10px] font-bold uppercase">Sold Out</Text>
-            </View>
-          )}
         </View>
 
-        <View className="p-4">
-          <Text className="text-gray-400 text-[10px] font-bold uppercase mb-1">
-            {item.category?.name || "General"}
-          </Text>
-          <Text className="text-gray-900 font-bold text-sm mb-1" numberOfLines={1}>
-            {item.name}
-          </Text>
+        <View className="p-3">
+          <Text className="text-slate-800 font-bold" numberOfLines={1}>{item.name}</Text>
 
           <View className="flex-row justify-between items-center mt-2">
-            <View className="flex-1">
-              <Text className="text-gray-400 text-[10px]">Price</Text>
-              <Text className="text-gray-900 font-black text-sm">
-                ₦{item.price ? Number(item.price).toLocaleString() : "0"}
-              </Text>
+            <View>
+              <Text className="text-gray-400 text-[10px] uppercase font-bold">{item.store?.name || "Globalink"}</Text>
+              <Text className="text-primary font-black">₦{Number(item.price).toLocaleString()}</Text>
             </View>
 
-            <View className="flex-row">
-              {/* Delete Button for Vendors */}
-              <TouchableOpacity
-                onPress={() => handleDelete(item.id)}
-                className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2"
-              >
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
-              </TouchableOpacity>
+            {/* CHAT BUTTON LOGIC */}
+            <View className="flex-row gap-2">
+              {/* Only show Chat if the current user isn't the seller of this item */}
+              {isSignedIn && userRole === 'seller' && item.store?.owner_id === item.id ? (
+                <TouchableOpacity className="bg-blue-50 p-2 rounded-full">
+                  <Ionicons name="create" size={16} color="#3B82F6" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleChatPress}
+                  className="bg-blue-50 p-2 rounded-full"
+                >
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#3B82F6" />
+                </TouchableOpacity>
+              )}
 
-              <View className="w-8 h-8 bg-gray-900 rounded-lg items-center justify-center shadow-md">
+              {/* ADD TO CART / DETAILS BUTTON */}
+              <TouchableOpacity
+                onPress={() => router.push(`/product/${item.id}`)}
+                className="bg-primary p-2 rounded-full shadow-sm shadow-primary/30"
+              >
                 <Ionicons name="add" size={18} color="white" />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -145,52 +151,70 @@ export default function MarketScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
-
-      {/* Header Section */}
-      <View className="bg-gray-950 pt-14 pb-8 px-6 rounded-b-[40px] shadow-2xl">
-        <View className="flex-row justify-between items-center mb-6">
+    <ScreenWrapper bg="bg-gray-50">
+      {/* Header */}
+      <View className="px-6 pt-2 pb-6 bg-white rounded-b-[32px] shadow-sm mb-4">
+        <View className="flex-row justify-between items-center mb-4">
           <View>
-            <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Explore</Text>
-            <Text className="text-white text-3xl font-black italic">Marketplace</Text>
+            <Text className="text-gray-400 text-xs font-bold tracking-widest uppercase">Globalink</Text>
+            <Text className="text-3xl font-bold text-gray-900">Discover</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push("/cart")}
-            className="bg-gray-800/50 w-12 h-12 rounded-2xl items-center justify-center border border-gray-700"
-          >
-            <Ionicons name="bag-handle-outline" size={24} color="white" />
+          <TouchableOpacity className="bg-gray-50 p-2 rounded-full border border-gray-100">
+            <Ionicons name="notifications-outline" size={24} color="#1E293B" />
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3">
-          <Ionicons name="search-outline" size={20} color="#6B7280" />
+        {/* Search Bar */}
+        <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+          <Ionicons name="search" size={20} color="#9CA3AF" />
           <TextInput
-            className="flex-1 ml-3 text-white font-semibold"
-            placeholder="Search premium products..."
-            placeholderTextColor="#4B5563"
+            className="flex-1 ml-3 text-gray-900 font-medium text-base"
+            placeholder="Search products, stores..."
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
       </View>
 
-      {/* Categories Filter */}
-      <View className="py-6">
+      {/* Seller Dashboard Quick Link */}
+      {isSignedIn && userRole === 'seller' && (
+        <TouchableOpacity
+          onPress={() => router.push("/seller/dashboard")}
+          className="mx-6 mb-4 bg-primary/10 border border-primary/20 p-4 rounded-2xl flex-row items-center justify-between"
+        >
+          <View className="flex-row items-center">
+            <View className="bg-primary p-2 rounded-xl mr-3">
+              <Ionicons name="stats-chart" size={18} color="white" />
+            </View>
+            <View>
+              <Text className="text-primary font-bold">Seller Mode Active</Text>
+              <Text className="text-gray-500 text-xs">Tap to manage your products & orders</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#329629" />
+        </TouchableOpacity>
+      )}
+
+
+      {/* Categories Horizontal Scroll */}
+      <View className="mb-4">
         <FlatList
-          data={[{ id: null, name: "All Items" }, ...categories]}
           horizontal
+          data={[{ id: null, name: "All" }, ...categories]}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
-          keyExtractor={(item) => item.id?.toString() || 'all'}
+          contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}
+          keyExtractor={(item) => (item.id ?? 'all').toString()}
           renderItem={({ item }) => {
             const isSelected = selectedCategory === item.id;
             return (
               <TouchableOpacity
                 onPress={() => setSelectedCategory(item.id)}
-                className={`mr-3 px-6 py-3 rounded-2xl border ${isSelected ? 'bg-gray-900 border-gray-900 shadow-md' : 'bg-gray-50 border-gray-100'}`}
+                className={`px-5 py-2.5 rounded-full border ${isSelected ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
               >
-                <Text className={`font-bold text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}>{item.name}</Text>
+                <Text className={`font-bold ${isSelected ? 'text-white' : 'text-gray-600'}`}>
+                  {item.name}
+                </Text>
               </TouchableOpacity>
             );
           }}
@@ -199,25 +223,35 @@ export default function MarketScreen() {
 
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#1DB954" />
-          <Text className="text-gray-400 mt-4 font-bold uppercase tracking-widest text-[10px]">Loading Collection</Text>
+          <ActivityIndicator color="#329629" size="large" />
         </View>
       ) : (
         <FlatList
-          data={filteredProducts}
+          data={products}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderProduct}
           numColumns={2}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 100 }}
+          columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 24 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View className="items-center mt-20">
-              <Ionicons name="search-outline" size={40} color="#9CA3AF" />
-              <Text className="text-gray-900 mt-4 font-bold text-lg">No results found</Text>
+            <View className="items-center justify-center mt-20">
+              <Ionicons name="search-outline" size={48} color="#CBD5E1" />
+              <Text className="text-gray-400 font-medium mt-4">No products found</Text>
             </View>
           }
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  imageWrapper: {
+    height: 160,
+    width: '100%',
+    backgroundColor: '#F1F5F9', // Shows gray while loading
+    position: 'relative',
+    overflow: 'hidden',
+  }
+});

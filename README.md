@@ -18,31 +18,100 @@ A comprehensive mobile application built with **Expo** and **React Native**, des
 
 ```text
 mobile/
-├── app/                  # Application Routes (Expo Router)
-│   ├── (auth)/           # Authentication screens (Login, Signup)
-│   ├── (profile)/        # User profile related screens
-│   ├── (tabs)/           # Main bottom tab navigator (Home, Search, Cart, etc.)
-│   ├── product/          # Product details screens
-│   ├── seller/           # Seller specific screens (Dashboard, Add Product)
-│   └── _layout.tsx       # Root layout configuration
-├── components/           # Reusable UI components
-│   ├── ui/               # Generic UI elements (if any)
+├── app/
+│   ├── (auth)/
+│   │   ├── _layout.tsx
+│   │   ├── index.tsx
+│   │   ├── login.tsx
+│   │   └── register.tsx
+│   ├── (delivery)/
+│   │   └── dashboard.tsx
+│   ├── (jobs)/
+│   │   └── dashboard.tsx
+│   ├── (profile)/
+│   │   ├── addresses.tsx
+│   │   ├── orders.tsx
+│   │   ├── privacy-security.tsx
+│   │   └── wishlist.tsx
+│   ├── (tabs)/
+│   │   ├── _layout.tsx
+│   │   ├── cart.tsx
+│   │   ├── index.tsx
+│   │   └── profile.tsx
+│   ├── admin/
+│   │   ├── dashboard.tsx
+│   │   └── kyc-requests.tsx
+│   ├── chat/
+│   │   └── [userId].tsx
+│   ├── kyc/
+│   │   └── upload.tsx
+│   ├── orders/
+│   │   ├── [id].tsx
+│   │   └── index.tsx
+│   ├── product/
+│   │   └── [id].tsx
+│   ├── rider/
+│   │   └── dashboard.tsx
+│   ├── seller/
+│   │   ├── edit-product/
+│   │   │   └── [id].tsx
+│   │   ├── orders/
+│   │   │   └── [id].tsx
+│   │   ├── add-product.tsx
+│   │   ├── create-store.tsx
+│   │   ├── dashboard.tsx
+│   │   ├── messages.tsx
+│   │   ├── setup-store.tsx
+│   │   └── setup.tsx
+│   ├── wallet/
+│   │   └── index.tsx
+│   ├── _layout.tsx
+│   └── checkout.tsx
+├── components/
 │   ├── AddressCard.tsx
 │   ├── AddressFormModal.tsx
+│   ├── AddressSelectionModal.tsx
+│   ├── AddressesHeader.tsx
+│   ├── EmptyState.tsx
+│   ├── ErrorState.tsx
+│   ├── LanguageSwitcher.tsx
+│   ├── LoadingState.tsx
+│   ├── OrderSummary.tsx
 │   ├── ProductsGrid.tsx
-│   └── ...
-├── context/              # React Contexts
-│   └── AuthContext.tsx   # Authentication state management
-├── hooks/                # Custom React Hooks
-│   └── useDebounce.ts    # Example hook
-├── lib/                  # Library configurations and helpers
-│   └── axios.ts          # Axios instance setup
-├── services/             # API services
-│   └── auth.ts           # Auth service functions
-├── types/                # TypeScript type definitions
-│   └── index.ts          # Shared types (User, Product, etc.)
-├── assets/               # Static assets (images, fonts)
-└── ...config files       # (app.json, tailwind.config.js, tsconfig.json)
+│   ├── RatingModal.tsx
+│   └── SafeScreen.tsx
+├── context/
+│   ├── AuthContext.tsx
+│   └── CartContext.tsx
+├── hooks/
+│   ├── useAddressess.ts
+│   ├── useCart.ts
+│   ├── useOrders.ts
+│   ├── useProduct.ts
+│   ├── useProducts.ts
+│   ├── useReviews.ts
+│   └── useWishlist.ts
+├── lib/
+│   ├── api.ts
+│   ├── cloudinary.ts
+│   ├── i18n.ts
+│   ├── marketApi.ts
+│   └── utils.ts
+├── services/
+│   └── auth.ts
+├── types/
+│   └── index.ts
+├── assets/
+├── app.json
+├── babel.config.js
+├── eslint.config.js
+├── expo-env.d.ts
+├── global.css
+├── metro.config.js
+├── nativewind-env.d.ts
+├── package.json
+├── tailwind.config.js
+└── tsconfig.json
 ```
 
 ## 🛠️ Getting Started

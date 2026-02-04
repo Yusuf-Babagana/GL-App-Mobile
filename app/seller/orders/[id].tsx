@@ -49,8 +49,9 @@ export default function SellerOrderDetail() {
             Alert.alert("Success", `Order is now ${status.replace('_', ' ')}`);
             fetchOrder(); // Refresh data to update the status badge
         } catch (e: any) {
-            console.log("Update Error:", e.response?.data);
-            Alert.alert("Action Failed", "You do not have permission to update this order.");
+            console.error("[UI DEBUG] Order Update Failed:", e);
+            const message = e?.detail || e?.error || "You do not have permission to update this order or the server rejected the request.";
+            Alert.alert("Action Failed", message);
         } finally {
             setIsUpdating(false);
         }
