@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { marketAPI } from '@/lib/marketApi';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -37,8 +38,6 @@ export default function OrderTrackingScreen() {
             // 1. Fetch real order details
             if (!orderId) throw new Error("No Order ID provided");
             const data = await marketAPI.getOrderById(Number(orderId));
-            console.log("DEBUG: Order Data:", JSON.stringify(data, null, 2)); // Debug Log
-            console.log("DEBUG: Rider Info:", data.rider);
             setOrder(data);
 
             // 2. Request Permissions for Geocoding
@@ -52,7 +51,6 @@ export default function OrderTrackingScreen() {
             let destCoords = null;
             if (data.shipping_address_json) {
                 const addressStr = `${data.shipping_address_json.address}, ${data.shipping_address_json.city}`;
-                console.log("Geocoding Buyer:", addressStr);
                 const geocoded = await Location.geocodeAsync(addressStr);
                 if (geocoded.length > 0) {
                     destCoords = {
@@ -70,7 +68,6 @@ export default function OrderTrackingScreen() {
                 // Try to use store address if available, else just city or default
                 // Assuming store has address field or we search by name
                 const storeStr = data.store.address || data.store.name || "Lagos, Nigeria";
-                console.log("Geocoding Store/Driver:", storeStr);
                 const geocodedStore = await Location.geocodeAsync(storeStr);
                 if (geocodedStore.length > 0) {
                     driverCoords = {
@@ -99,7 +96,6 @@ export default function OrderTrackingScreen() {
             }
 
         } catch (error) {
-            console.log("Error loading tracking data:", error);
             Alert.alert("Error", "Failed to load tracking info.");
         } finally {
             setIsLoading(false);
@@ -109,7 +105,7 @@ export default function OrderTrackingScreen() {
     if (isLoading) {
         return (
             <View className="flex-1 items-center justify-center bg-white">
-                <ActivityIndicator size="large" color="#10b981" />
+                <ActivityIndicator size="large" color={Colors.primary} />
                 <Text className="text-gray-500 mt-4">Locating your order...</Text>
             </View>
         );
@@ -149,7 +145,7 @@ export default function OrderTrackingScreen() {
                         title={order?.rider?.user?.first_name || "Rider"}
                         description={order?.rider ? "Your Rider" : "Store Location"}
                     >
-                        <View className="bg-emerald-500 p-2 rounded-full border-2 border-white shadow-lg">
+                        <View className="bg-primary p-2 rounded-full border-2 border-white shadow-lg">
                             <Ionicons name="bicycle" size={20} color="white" />
                         </View>
                     </Marker>
@@ -180,8 +176,8 @@ export default function OrderTrackingScreen() {
                             {order?.delivery_status?.replace('_', ' ') || "Processing"}
                         </Text>
                     </View>
-                    <View className={`px-4 py-2 rounded-full ${order?.delivery_status === 'delivered' ? 'bg-green-100' : 'bg-emerald-100'}`}>
-                        <Text className={`font-bold text-xs uppercase ${order?.delivery_status === 'delivered' ? 'text-green-700' : 'text-emerald-700'}`}>
+                    <View className={`px-4 py-2 rounded-full bg-primary-container`}>
+                        <Text className={`font-bold text-xs uppercase text-primary-dark`}>
                             {order?.delivery_status === 'delivered' ? "Arrived" : "On the way"}
                         </Text>
                     </View>
@@ -197,9 +193,9 @@ export default function OrderTrackingScreen() {
                             <Text className="font-bold text-gray-900 text-lg">
                                 {order.rider.user.first_name} {order.rider.user.last_name}
                             </Text>
-                            <Text className="text-gray-500 text-xs">Verified Rider • <Text className="text-emerald-600 font-bold">5.0 ★</Text></Text>
+                            <Text className="text-gray-500 text-xs">Verified Rider • <Text className="text-primary font-bold">5.0 ★</Text></Text>
                         </View>
-                        <TouchableOpacity className="bg-emerald-500 p-3 rounded-full">
+                        <TouchableOpacity className="bg-primary p-3 rounded-full">
                             <Ionicons name="call" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
@@ -221,7 +217,7 @@ export default function OrderTrackingScreen() {
                         <View className="w-8 items-center">
                             <View className="w-3 h-3 bg-gray-300 rounded-full" />
                             <View className="w-0.5 h-8 bg-gray-200 my-1" />
-                            <View className="w-3 h-3 bg-emerald-500 rounded-full" />
+                            <View className="w-3 h-3 bg-primary rounded-full" />
                         </View>
                         <View className="flex-1 ml-2">
                             <View className="h-10 justify-center">

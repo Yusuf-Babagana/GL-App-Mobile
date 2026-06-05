@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -26,7 +27,7 @@ export default function MarketsScreen() {
             const data = await marketAPI.getAllStores();
             setStores(data);
         } catch (e) {
-            console.log("Markets Fetch Error:", e);
+
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -46,7 +47,7 @@ export default function MarketsScreen() {
          * Uses the same logic as the Product grid to resolve Cloudinary vs Local Media
          */
         const getLogoUrl = (path: string) => {
-            const BASE_IP = "172.20.10.7"; // Your current active IP
+            const BASE_URL = "https://glappbackend.pythonanywhere.com";
 
             if (!path || path === "undefined" || path === "null") {
                 // Dynamic placeholder using the Store's initial
@@ -56,7 +57,7 @@ export default function MarketsScreen() {
             if (path.startsWith('http')) return path;
 
             const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-            return `http://${BASE_IP}:8000/media/${cleanPath}`;
+            return `${BASE_URL}/media/${cleanPath}`;
         };
 
         const logoUrl = getLogoUrl(item.logo);
@@ -90,8 +91,8 @@ export default function MarketsScreen() {
                             {item.name}
                         </Text>
                         {item.is_verified && (
-                            <View className="bg-green-100 p-0.5 rounded-full ml-1.5">
-                                <Ionicons name="checkmark-sharp" size={10} color="#10B981" />
+                            <View className="bg-primary-container p-0.5 rounded-full ml-1.5">
+                                <Ionicons name="checkmark-sharp" size={10} color={Colors.primary} />
                             </View>
                         )}
                     </View>
@@ -116,7 +117,7 @@ export default function MarketsScreen() {
 
             {/* Header Area */}
             <LinearGradient
-                colors={['#DCFCE7', '#F8FAFC']}
+                colors={[Colors.primaryContainer, '#F8FAFC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 className="pt-16 pb-6 px-6 z-10 border-b border-primary/5 rounded-b-[40px] shadow-sm mb-4"
@@ -132,14 +133,14 @@ export default function MarketsScreen() {
                         Verified{"\n"}Markets
                     </Text>
                     <View className="bg-white w-12 h-12 rounded-2xl items-center justify-center mb-1 shadow-sm border border-slate-100">
-                        <Ionicons name="storefront" size={24} color="#329629" />
+                        <Ionicons name="storefront" size={24} color={Colors.primary} />
                     </View>
                 </View>
             </LinearGradient>
 
             {isLoading ? (
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator color="#10B981" size="large" />
+                    <ActivityIndicator color={Colors.primary} size="large" />
                     <Text className="text-slate-400 font-bold mt-4 text-xs uppercase tracking-widest">Finding Stores...</Text>
                 </View>
             ) : (
@@ -152,7 +153,7 @@ export default function MarketsScreen() {
                     contentContainerStyle={{ paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#10B981" />
+                        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
                     }
                     ListEmptyComponent={
                         <View className="items-center mt-24 px-10">

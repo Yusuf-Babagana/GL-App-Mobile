@@ -28,7 +28,6 @@ export function useProduct(id: string) {
                 const response = await api.get(`/market/products/${id}/`);
                 setData(response.data);
             } catch (error) {
-                console.log("Error fetching product details:", error);
                 setIsError(true);
             } finally {
                 setIsLoading(false);

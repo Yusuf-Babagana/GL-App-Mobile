@@ -1,87 +1,71 @@
+import { Colors } from "@/constants/Colors";
+import { useRouter } from "expo-router";
+import { Briefcase, Globe, ShieldCheck, ShoppingCart } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const AuthScreen = () => {
+  const router = useRouter();
   const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
 
-  const handleSocialAuth = async (strategy: string) => {
-    setLoadingStrategy(strategy);
-    // TODO: Implement social auth real logic
-    setTimeout(() => {
-      setLoadingStrategy(null);
-      Alert.alert("Not Implemented", `Social auth with ${strategy} is coming soon!`);
-    }, 1000);
-  };
-
   return (
-    <View className="px-8 flex-1 justify-center items-center bg-white">
-      {/* DEMO IMAGE */}
-      <Image
-        source={require("../../assets/images/auth-image.png")}
-        className="size-96"
-        resizeMode="contain"
-      />
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="bg-white">
+      <View className="px-8 pt-16 pb-10 justify-center items-center">
+        {/* LOGO AREA */}
+        <View className="bg-primary-container p-4 rounded-full mb-4">
+          <Globe size={60} color={Colors.primary} />
+        </View>
 
-      <View className="gap-2 mt-3">
-        {/* GOOGLE SIGN IN BTN */}
+        <Text className="text-3xl font-black text-gray-900 mb-2">Welcome to globalink!</Text>
+        <Text className="text-center text-gray-500 text-base leading-6 px-4">
+          Globalink is the one global marketplace and online work platform that simplifies your transactions.
+        </Text>
+
+        {/* CORE FEATURES (From Requirements) */}
+        <View className="w-full mt-8 gap-y-4">
+          <View className="flex-row items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <ShoppingCart size={24} color={Colors.primary} />
+            <Text className="ml-4 font-bold text-gray-700">Buy or sell goods from anywhere</Text>
+          </View>
+          <View className="flex-row items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <Briefcase size={24} color="#2563eb" />
+            <Text className="ml-4 font-bold text-gray-700">Find jobs or hire workers globally</Text>
+          </View>
+          <View className="flex-row items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <ShieldCheck size={24} color="#f59e0b" />
+            <Text className="ml-4 font-bold text-gray-700">Make payments easily and securely</Text>
+          </View>
+        </View>
+
+        {/* LANGUAGE SELECTION (Requirement Specific) */}
+        <View className="mt-10 w-full">
+          <Text className="text-center text-gray-400 font-bold uppercase text-xs tracking-widest mb-4">Choose your language</Text>
+          <View className="flex-row justify-between gap-x-2">
+            <TouchableOpacity className="flex-1 bg-white border border-gray-200 py-3 rounded-xl items-center">
+              <Text className="font-bold text-gray-800">English</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-1 bg-white border border-gray-200 py-3 rounded-xl items-center">
+              <Text className="font-bold text-gray-800">Hausa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-1 bg-white border border-gray-200 py-3 rounded-xl items-center">
+              <Text className="font-bold text-gray-800">العربية</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* JOIN BUTTON */}
         <TouchableOpacity
-          className="flex-row items-center justify-center bg-white border border-gray-300 rounded-full px-6 py-2"
-          onPress={() => handleSocialAuth("oauth_google")}
-          disabled={loadingStrategy !== null}
-          style={{
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            elevation: 2, // this is for android
-          }}
+          onPress={() => router.push("/(auth)/login")}
+          className="w-full bg-primary py-4 rounded-2xl mt-10 shadow-lg shadow-green-200"
         >
-          {loadingStrategy === "oauth_google" ? (
-            <ActivityIndicator size={"small"} color={"#4285f4"} />
-          ) : (
-            <View className="flex-row items-center justify-center">
-              <Image
-                source={require("../../assets/images/google.png")}
-                className="size-10 mr-3"
-                resizeMode="contain"
-              />
-              <Text className="text-black font-medium text-base">Continue with Google</Text>
-            </View>
-          )}
+          <Text className="text-white text-center font-black text-lg">Join globalink today</Text>
         </TouchableOpacity>
 
-        {/* APPLE SIGN IN BTN */}
-        <TouchableOpacity
-          className="flex-row items-center justify-center bg-white border border-gray-300 rounded-full px-6 py-3"
-          onPress={() => handleSocialAuth("oauth_apple")}
-          disabled={loadingStrategy !== null}
-          style={{
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            elevation: 2, // this is for android
-          }}
-        >
-          {loadingStrategy === "oauth_apple" ? (
-            <ActivityIndicator size={"small"} color={"#4285f4"} />
-          ) : (
-            <View className="flex-row items-center justify-center">
-              <Image
-                source={require("../../assets/images/apple.png")}
-                className="size-8 mr-3"
-                resizeMode="contain"
-              />
-              <Text className="text-black font-medium text-base">Continue with Apple</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <Text className="text-center text-gray-400 text-xs mt-6">
+          Connect with the world.
+        </Text>
       </View>
-
-      <Text className="text-center text-gray-500 text-xs leading-4 mt-6 px-2">
-        By signing up, you agree to our <Text className="text-blue-500">Terms</Text>
-        {", "}
-        <Text className="text-blue-500">Privacy Policy</Text>
-        {", and "}
-        <Text className="text-blue-500">Cookie Use</Text>
-      </Text>
-    </View>
+    </ScrollView>
   );
 };
 

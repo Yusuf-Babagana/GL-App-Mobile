@@ -9,15 +9,19 @@ export interface User {
   clerkId: string;
   email: string;
   fullName: string;
+  full_name?: string; // Backend field
   phoneNumber?: string; // Required for KYC [cite: 50]
   imageUrl: string;
 
   // Role Management
   roles: UserRole[];
   activeRole: UserRole; // To toggle UI between Buyer/Seller/Worker modes
+  active_role?: UserRole; // Backend field
 
   // Trust & Safety [cite: 48-53]
   kycStatus: KycStatus;
+  kyc_status?: KycStatus; // Backend field
+  rejection_reason?: string; // Backend field
   kycDocuments?: {
     idType: 'national_id' | 'passport' | 'drivers_license';
     idImageUrl: string;
@@ -34,6 +38,7 @@ export interface Address {
   _id: string;
   label: string; // e.g., "Home", "Warehouse"
   fullName: string;
+  full_name?: string; // Backend field
   streetAddress: string;
   city: string;
   state: string;

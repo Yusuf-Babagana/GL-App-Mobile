@@ -35,9 +35,9 @@ export default function RiderDashboard() {
             setMyJobs(active.results || active);
             setWallet(walletData);
 
-            console.log("DEBUG: Wallet balance fetched:", walletData.balance);
+
         } catch (e) {
-            console.error("DEBUG: Error fetching dashboard data", e);
+
         } finally {
             setIsLoading(false);
         }
@@ -99,23 +99,23 @@ export default function RiderDashboard() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#047857" />
+            <StatusBar barStyle="light-content" backgroundColor="#14532D" />
 
             {/* Header */}
-            <View className="bg-emerald-700 pt-12 pb-6 px-6 rounded-b-[40px] shadow-2xl z-10">
+            <View className="bg-primary-dark pt-12 pb-6 px-6 rounded-b-[40px] shadow-2xl z-10">
                 <View className="flex-row justify-between items-start mb-6">
                     <View>
-                        <Text className="text-emerald-200 text-xs font-bold uppercase tracking-tighter">Logistic Partner</Text>
+                        <Text className="text-primary-container text-xs font-bold uppercase tracking-tighter">Logistic Partner</Text>
                         <Text className="text-white text-3xl font-black">Rider Hub</Text>
                     </View>
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={() => router.push("/rider/settings")}
-                            className="bg-emerald-600 p-2.5 rounded-full mr-3"
+                            className="bg-primary p-2.5 rounded-full mr-3"
                         >
                             <Ionicons name="settings-sharp" size={22} color="white" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={handleLogout} className="bg-emerald-800 p-2.5 rounded-full">
+                        <TouchableOpacity onPress={handleLogout} className="bg-primary-dark p-2.5 rounded-full border border-white/20">
                             <Ionicons name="log-out-outline" size={22} color="#FECACA" />
                         </TouchableOpacity>
                     </View>
@@ -124,7 +124,7 @@ export default function RiderDashboard() {
                 {/* Wallet Card */}
                 <View className="bg-white/10 p-5 rounded-[28px] border border-white/20 flex-row justify-between items-center">
                     <View>
-                        <Text className="text-emerald-100 text-xs font-bold uppercase">Available Balance</Text>
+                        <Text className="text-primary-container text-xs font-bold uppercase">Available Balance</Text>
                         <Text className="text-white text-3xl font-black mt-1">
                             ₦{wallet ? Number(wallet.balance).toLocaleString() : "0.00"}
                         </Text>
@@ -133,23 +133,23 @@ export default function RiderDashboard() {
                         onPress={() => router.push("/wallet")}
                         className="bg-white px-4 py-2 rounded-2xl"
                     >
-                        <Text className="text-emerald-700 font-bold text-xs">View Wallet</Text>
+                        <Text className="text-primary-dark font-bold text-xs">View Wallet</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Tab Switcher */}
-                <View className="flex-row bg-emerald-800 p-1 rounded-xl mt-6">
+                <View className="flex-row bg-primary-dark p-1 rounded-xl mt-6">
                     <TouchableOpacity
                         onPress={() => setActiveTab('available')}
                         className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'available' ? 'bg-white' : ''}`}
                     >
-                        <Text className={`font-bold ${activeTab === 'available' ? 'text-emerald-700' : 'text-emerald-200'}`}>New Jobs ({availableJobs.length})</Text>
+                        <Text className={`font-bold ${activeTab === 'available' ? 'text-primary-dark' : 'text-primary-container'}`}>New Jobs ({availableJobs.length})</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('active')}
                         className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'active' ? 'bg-white' : ''}`}
                     >
-                        <Text className={`font-bold ${activeTab === 'active' ? 'text-emerald-700' : 'text-emerald-200'}`}>My Tasks ({myJobs.filter(j => j.delivery_status !== 'delivered').length})</Text>
+                        <Text className={`font-bold ${activeTab === 'active' ? 'text-primary-dark' : 'text-primary-container'}`}>My Tasks ({myJobs.filter(j => j.delivery_status !== 'delivered').length})</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -171,7 +171,7 @@ export default function RiderDashboard() {
                             <View key={job.id} className="bg-white p-5 rounded-3xl mb-4 shadow-sm border border-gray-100">
                                 <View className="flex-row justify-between mb-2">
                                     <Text className="font-bold text-gray-900 text-lg">Pickup Request #{job.id}</Text>
-                                    <Text className="text-green-600 font-bold">₦1,500 Earn</Text>
+                                    <Text className="text-primary font-bold">₦1,500 Earn</Text>
                                 </View>
                                 <View className="flex-row items-center mb-2">
                                     <Ionicons name="storefront" size={16} color="gray" />
@@ -227,7 +227,7 @@ export default function RiderDashboard() {
 
                                         <TouchableOpacity
                                             onPress={() => { setSelectedJob(job); setPinModalVisible(true); }}
-                                            className="bg-green-600 py-3 rounded-xl items-center shadow-lg shadow-green-200"
+                                            className="bg-primary py-3 rounded-xl items-center shadow-lg shadow-green-200"
                                         >
                                             <Text className="text-white font-bold">Complete Delivery</Text>
                                         </TouchableOpacity>
@@ -257,7 +257,7 @@ export default function RiderDashboard() {
 
                         <TouchableOpacity
                             onPress={handleDelivery}
-                            className="bg-green-600 py-4 rounded-xl items-center mb-3"
+                            className="bg-primary py-4 rounded-xl items-center mb-3"
                         >
                             <Text className="text-white font-bold text-lg">Confirm & Get Paid</Text>
                         </TouchableOpacity>

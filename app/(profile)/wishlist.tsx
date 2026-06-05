@@ -81,7 +81,7 @@ function WishlistScreen() {
                 key={item._id}
                 className="bg-surface rounded-3xl overflow-hidden mb-3"
                 activeOpacity={0.8}
-                // onPress={() => router.push(`/product/${item._id}`)}
+              // onPress={() => router.push(`/product/${item._id}`)}
               >
                 <View className="flex-row p-4">
                   <Image
@@ -100,8 +100,8 @@ function WishlistScreen() {
 
                     {item.stock > 0 ? (
                       <View className="flex-row items-center">
-                        <View className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                        <Text className="text-green-500 text-sm font-semibold">
+                        <View className="w-2 h-2 bg-primary rounded-full mr-2" />
+                        <Text className="text-primary text-sm font-semibold">
                           {item.stock} in stock
                         </Text>
                       </View>

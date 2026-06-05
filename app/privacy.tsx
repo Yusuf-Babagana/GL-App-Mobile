@@ -1,4 +1,5 @@
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -22,7 +23,7 @@ export default function PrivacySecurityScreen() {
             "Are you sure you want to delete your account? This action cannot be undone.",
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => console.log("Delete Account Pressed") }
+                { text: "Delete", style: "destructive", onPress: () => {} }
             ]
         );
     };
@@ -38,7 +39,7 @@ export default function PrivacySecurityScreen() {
             </View>
             {type === "toggle" ? (
                 <Switch
-                    trackColor={{ false: "#E2E8F0", true: "#329629" }}
+                    trackColor={{ false: "#E2E8F0", true: Colors.primary }}
                     thumbColor={value ? "#ffffff" : "#f4f3f4"}
                     ios_backgroundColor="#E2E8F0"
                     onValueChange={onValueChange}
@@ -102,14 +103,14 @@ export default function PrivacySecurityScreen() {
                     subtitle="Allow data usage for personalization"
                     value={isDataSharingEnabled}
                     onValueChange={setIsDataSharingEnabled}
-                    color="#10B981"
+                    color={Colors.primary}
                 />
 
                 <SettingItem
                     icon="document-text-outline"
                     title="Privacy Policy"
                     type="link"
-                    onPress={() => Alert.alert("Privacy Policy", "Link to privacy policy will open here.")}
+                    onPress={() => router.push('/privacy-policy')}
                     color="#64748B"
                 />
 

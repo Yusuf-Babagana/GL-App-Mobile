@@ -1,20 +1,25 @@
+import { Colors } from "@/constants/Colors";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Animated,
     Dimensions,
     FlatList,
+    Pressable,
     StyleSheet,
     Text,
     TouchableOpacity,
     TouchableWithoutFeedback,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height, width } = Dimensions.get('window');
 
@@ -25,70 +30,118 @@ interface Ad {
     video_url?: string;
     video?: string;
     description?: string;
-    store_name?: string; // Assuming we might get this later
+    store_name?: string;
+    store_logo?: string;
     [key: string]: any;
 }
 
 const getVideoUrl = (path: string) => {
     if (!path) return '';
-
-    // If Cloudinary, inject the mobile-friendly codec automatically
     if (path.includes('cloudinary.com') && path.includes('/video/upload/')) {
         return path.replace('/video/upload/', '/video/upload/f_mp4,vc_h264,q_auto/');
     }
-
-    // If it's a local Django path
     if (path.startsWith('/media/')) {
-        return `http://172.20.10.7:8000${path}`;
+        return `https://glappbackend.pythonanywhere.com${path}`;
     }
-
     return path;
+};
+
+const formatPrice = (price: number | string) => {
+    const num = Number(price);
+    if (isNaN(num)) return price;
+    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+};
+
+const LikeButton = ({ initialCount = 0 }: { initialCount?: number }) => {
+    const [liked, setLiked] = useState(false);
+    const [count, setCount] = useState(initialCount);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePress = () => {
+        const newLiked = !liked;
+        setLiked(newLiked);
+        setCount(prev => newLiked ? prev + 1 : Math.max(0, prev - 1));
+
+        Animated.sequence([
+            Animated.spring(scaleAnim, { toValue: 0.7, useNativeDriver: true, speed: 50 }),
+            Animated.spring(scaleAnim, { toValue: 1.15, useNativeDriver: true, speed: 30 }),
+            Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 40 }),
+        ]).start();
+    };
+
+    return (
+        <TouchableOpacity activeOpacity={0.7} onPress={handlePress} style={styles.actionButton}>
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <Ionicons name={liked ? "heart" : "heart-outline"} size={35} color={liked ? '#FF3B30' : 'white'} />
+            </Animated.View>
+            <Text style={styles.actionText}>{count > 999 ? `${(count / 1000).toFixed(1)}K` : count}</Text>
+        </TouchableOpacity>
+    );
+};
+
+const ProgressDots = ({ total, active }: { total: number; active: number }) => {
+    if (total <= 1) return null;
+    return (
+        <View style={styles.progressContainer}>
+            {Array.from({ length: Math.min(total, 20) }).map((_, i) => (
+                <View
+                    key={i}
+                    style={[
+                        styles.progressDot,
+                        {
+                            backgroundColor: i === active ? 'white' : 'rgba(255,255,255,0.35)',
+                            width: i === active ? 16 : 6,
+                        },
+                    ]}
+                />
+            ))}
+        </View>
+    );
 };
 
 const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
     const router = useRouter();
     const finalVideoUrl = getVideoUrl(item.video_url || item.video || '');
-    // This creates a thumbnail image from the 0-second mark of your video
-    const posterUrl = finalVideoUrl.replace('/f_mp4,vc_h264', '/so_0,f_jpg');
-
     const [isPlaying, setIsPlaying] = useState(true);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
 
-    // Initialize the player
     const player = useVideoPlayer(finalVideoUrl, (p) => {
         p.loop = true;
         p.muted = false;
-        p.pause(); // Start paused to prevent overlap
+        p.pause();
     });
 
-    // Reset state to playing whenever the video becomes visible (like TikTok)
     useEffect(() => {
         if (isVisible) {
             setIsPlaying(true);
+            Animated.parallel([
+                Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+                Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+            ]).start();
+        } else {
+            fadeAnim.setValue(0);
+            slideAnim.setValue(30);
         }
     }, [isVisible]);
 
-    // Handle Play/Pause based on visibility AND manual state
     useEffect(() => {
         if (isVisible && isPlaying && player && finalVideoUrl) {
             player.play();
-            // console.log(`[Live] Playing video ID: ${item.id}`);
         } else if (player) {
             player.pause();
-            // Reset to start if we scrolled away (so it plays from start next time)
             if (!isVisible) {
                 player.currentTime = 0;
             }
         }
     }, [isVisible, isPlaying, player, finalVideoUrl]);
 
-    const togglePlay = () => {
-        setIsPlaying(prev => !prev);
-    };
+    const togglePlay = () => setIsPlaying(prev => !prev);
 
     if (!finalVideoUrl) {
         return (
             <View style={[styles.itemContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color="white" size="large" />
             </View>
         );
     }
@@ -101,137 +154,202 @@ const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
                     player={player}
                     contentFit="cover"
                     nativeControls={false}
-                    // Use textureView for smoother scrolling on Android
                     surfaceType="textureView"
-                    posterSource={{ uri: posterUrl }}
                 />
 
-                {/* Play Icon Overlay - Visible when paused */}
+                {/* Top gradient overlay */}
+                <LinearGradient
+                    colors={['rgba(0,0,0,0.5)', 'transparent']}
+                    style={styles.topGradient}
+                    pointerEvents="none"
+                />
+
+                {/* Play/Pause overlay */}
                 {!isPlaying && (
-                    <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center', alignItems: 'center', zIndex: 5 }]}>
-                        <Ionicons name="play" size={80} color="rgba(255, 255, 255, 0.6)" />
+                    <View style={styles.playOverlay}>
+                        <View style={styles.playCircle}>
+                            <Ionicons name="play" size={48} color="white" style={{ marginLeft: 4 }} />
+                        </View>
                     </View>
                 )}
 
-                {/* Right Sidebar - Social Actions */}
-                <View style={styles.rightSidebar}>
+                {/* Right Sidebar */}
+                <Animated.View
+                    style={[
+                        styles.rightSidebar,
+                        { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }
+                    ]}
+                >
                     <View style={styles.profileContainer}>
                         <View style={styles.avatarBorder}>
                             <Image
-                                // Ensure this is a clean URI object
-                                source={{ uri: `https://ui-avatars.com/api/?name=${item.store_name || 'Store'}&background=random` }}
+                                source={{
+                                    uri: item.store_logo ||
+                                        `https://ui-avatars.com/api/?name=${item.store_name || 'Store'}&background=329629&color=fff&size=96`
+                                }}
                                 style={styles.avatar}
                                 contentFit="cover"
-                                transition={500}
+                                transition={300}
                             />
                         </View>
                         <View style={styles.followBadge}>
-                            <Ionicons name="add" size={12} color="white" />
+                            <Ionicons name="add" size={14} color="white" />
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.actionButton}>
-                        <Ionicons name="heart" size={35} color="white" />
-                        <Text style={styles.actionText}>1.2K</Text>
+                    <LikeButton initialCount={Math.floor(Math.random() * 500) + 50} />
+
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                            const sellerId = item.seller_id || item.store?.owner_id || item.store?.user_id;
+                            if (sellerId) {
+                                router.push({
+                                    pathname: "/chat/[userId]",
+                                    params: { userId: sellerId, name: item.store_name || "Seller" }
+                                });
+                            }
+                        }}
+                    >
+                        <Ionicons name="chatbubble-ellipses" size={33} color="white" />
+                        <Text style={styles.actionText}>Chat</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionButton}>
-                        <Ionicons name="chatbubble-ellipses" size={35} color="white" />
-                        <Text style={styles.actionText}>234</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton}>
-                        <Ionicons name="arrow-redo" size={35} color="white" />
+                    <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
+                        <Ionicons name="arrow-redo" size={33} color="white" />
                         <Text style={styles.actionText}>Share</Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
-                {/* Bottom Gradient Overlay */}
-                <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.9)']}
-                    style={styles.gradientOverlay}
+                {/* Bottom Glassmorphism Card */}
+                <Animated.View
+                    style={[
+                        styles.bottomCard,
+                        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+                    ]}
                 >
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.storeName}>@{item.store_name || 'GL Store'}</Text>
+                    <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+                    <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.3)']}
+                        style={StyleSheet.absoluteFill}
+                    />
+
+                    <View style={styles.bottomContent}>
+                        <View style={styles.storeRow}>
+                            <View style={styles.storeBadge}>
+                                <Ionicons name="storefront" size={14} color={Colors.primary} />
+                                <Text style={styles.storeName}>@{item.store_name || 'GL Store'}</Text>
+                            </View>
+                            <View style={styles.verifiedBadge}>
+                                <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
+                            </View>
+                        </View>
+
                         <Text style={styles.productName}>{item.name}</Text>
-                        <Text numberOfLines={2} style={styles.description}>
-                            {item.description || 'Check out this amazing product! Limited stock available. #fashion #style'}
-                        </Text>
+
+                        {item.description ? (
+                            <Text numberOfLines={2} style={styles.description}>
+                                {item.description}
+                            </Text>
+                        ) : null}
 
                         <View style={styles.priceRow}>
-                            <Text style={styles.currency}>₦</Text>
-                            <Text style={styles.price}>{Number(item.price).toLocaleString()}</Text>
+                            <Text style={styles.currencySymbol}>₦</Text>
+                            <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                            {item.compare_at_price && Number(item.compare_at_price) > Number(item.price) && (
+                                <Text style={styles.comparePrice}>
+                                    ₦{formatPrice(item.compare_at_price)}
+                                </Text>
+                            )}
                         </View>
 
                         <TouchableOpacity
                             style={styles.shopNowBtn}
-                            onPress={() => {
-                                router.push(`/product/${item.id}`);
-                            }}
+                            activeOpacity={0.85}
+                            onPress={() => router.push(`/product/${item.id}`)}
                         >
-                            <Ionicons name="bag-handle" size={20} color="white" />
-                            <Text style={styles.shopNowText}>Shop Now</Text>
-                            <Ionicons name="arrow-forward" size={16} color="white" style={{ marginLeft: 4 }} />
+                            <LinearGradient
+                                colors={[Colors.primary, '#4ADE80']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.shopGradient}
+                            >
+                                <Ionicons name="bag-handle" size={18} color="white" />
+                                <Text style={styles.shopNowText}>Shop Now</Text>
+                                <Ionicons name="arrow-forward" size={16} color="white" style={{ marginLeft: 4 }} />
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
-                </LinearGradient>
+                </Animated.View>
             </View>
         </TouchableWithoutFeedback>
     );
 };
 
+const ShimmerLoader = () => (
+    <View style={[styles.itemContainer, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' }]}>
+        <View style={{ alignItems: 'center', gap: 16 }}>
+            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#222' }} />
+            <View style={{ width: 200, height: 16, borderRadius: 8, backgroundColor: '#222' }} />
+            <View style={{ width: 150, height: 12, borderRadius: 6, backgroundColor: '#1a1a1a' }} />
+        </View>
+    </View>
+);
+
 export default function AdsScreen() {
+    const insets = useSafeAreaInsets();
     const [ads, setAds] = useState<Ad[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-
-    // Pagination State
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
 
-    const loadAds = async (pageNum: number) => {
-        // 1. CRITICAL: Stop if already loading OR if we know there's no more data
+    const loadAds = useCallback(async (pageNum: number) => {
         if (loadingMore || (!hasMore && pageNum > 1)) return;
-
         try {
             setLoadingMore(true);
-            const data = await marketAPI.getVideoAds(pageNum);
-
-            // 2. LOGIC FIX: If the server returns 0 items, or fewer items than a full page
-            // (usually 10), we know we have reached the end.
-            if (!data || data.length === 0) {
+            const res = await marketAPI.get('/market/products/', {
+                params: { page: pageNum }
+            });
+            const products = res?.data?.results || res?.data || [];
+            const videoAds = products.filter((p: any) => p.video_ad_url || p.video_url);
+            if (videoAds.length === 0) {
                 setHasMore(false);
-                console.log("[LiveFeed] No more ads to fetch.");
                 return;
             }
-
+            const mapped: Ad[] = videoAds.map((p: any) => {
+                const vidUrl = p.video_ad_url || p.video_url;
+                return {
+                    id: p.id,
+                    name: p.name || p.title || '',
+                    price: p.price ?? 0,
+                    video_url: vidUrl,
+                    video: vidUrl,
+                    description: p.description || '',
+                    store_name: p.store_name || p.store?.name || 'GL Store',
+                    store_logo: p.store_logo || p.store?.logo,
+                    seller_id: p.seller_id || p.store?.owner_id,
+                };
+            });
             setAds(prev => {
-                if (pageNum === 1) return data;
-
-                // 3. DUPLICATE CHECK: Prevent adding the same video twice
+                if (pageNum === 1) return mapped;
                 const existingIds = new Set(prev.map(item => item.id));
-                const newItems = data.filter((item: Ad) => !existingIds.has(item.id));
-
-                // If after filtering all items are duplicates, stop fetching
-                if (newItems.length === 0 && data.length > 0) {
-                    setHasMore(false);
-                }
-
+                const newItems = mapped.filter((item: Ad) => !existingIds.has(item.id));
+                if (newItems.length === 0 && videoAds.length > 0) setHasMore(false);
                 return [...prev, ...newItems];
             });
-
         } catch (e) {
             console.error("Failed to load ads", e);
-            setHasMore(false); // Stop loop on error
+            setHasMore(false);
         } finally {
             setLoadingMore(false);
+            setInitialLoading(false);
         }
-    };
+    }, [loadingMore, hasMore]);
 
-    // Initial Load
-    useEffect(() => {
-        loadAds(1);
-    }, []);
+    useEffect(() => { loadAds(1); }, []);
 
     const fetchMoreAds = () => {
         if (!loadingMore && hasMore) {
@@ -249,32 +367,71 @@ export default function AdsScreen() {
 
     const viewabilityConfig = useRef({
         itemVisiblePercentThreshold: 80,
-        minimumViewTime: 100, // Wait 100ms to avoid flickering
+        minimumViewTime: 100,
     }).current;
+
+    const renderItem = useCallback(({ item, index }: { item: Ad; index: number }) => (
+        <VideoAdItem item={item} isVisible={index === activeIndex} />
+    ), [activeIndex]);
+
+    const keyExtractor = useCallback((item: Ad, index: number) =>
+        item.id?.toString() || index.toString(), []);
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={ads}
-                // Yusuf, make sure each item has a unique ID from Django. 
-                // If IDs are missing, use index as a last resort, but ID is better.
-                keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                renderItem={({ item, index }) => (
-                    <VideoAdItem
-                        item={item}
-                        // Only play if the index strictly matches activeIndex
-                        isVisible={index === activeIndex}
-                    />
-                )}
-                pagingEnabled={true}
-                ListEmptyComponent={
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: height }}>
-                        <Ionicons name="videocam-off-outline" size={50} color="gray" />
-                        <Text style={{ color: 'gray', marginTop: 10 }}>No live videos available yet.</Text>
-                        <TouchableOpacity onPress={() => loadAds(1)} style={{ marginTop: 20, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}>
-                            <Text style={{ color: 'white' }}>Refresh Feed</Text>
+            {/* Modern Header */}
+            <LinearGradient
+                colors={['rgba(0,0,0,0.6)', 'transparent']}
+                style={[styles.header, { paddingTop: insets.top + 8 }]}
+                pointerEvents="box-none"
+            >
+                <View style={styles.headerContent}>
+                    <View style={styles.headerLeft}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={styles.liveIndicator}>
+                                <View style={styles.liveDot} />
+                                <Text style={styles.liveText}>LIVE</Text>
+                            </View>
+                            <Text style={styles.headerTitle}>Ads</Text>
+                        </View>
+                    </View>
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+                            <Ionicons name="search" size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+                            <Ionicons name="ellipsis-vertical" size={22} color="white" />
                         </TouchableOpacity>
                     </View>
+                </View>
+                <ProgressDots total={ads.length} active={activeIndex} />
+            </LinearGradient>
+
+            {/* Single FlatList — never changes identity */}
+            <FlatList
+                data={initialLoading ? [1, 2, 3] as any : ads}
+                keyExtractor={initialLoading ? (i: any) => `skeleton-${i}` : keyExtractor}
+                renderItem={initialLoading ? () => <ShimmerLoader /> : renderItem}
+                pagingEnabled
+                ListEmptyComponent={
+                    !initialLoading ? (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height }}>
+                            <View style={styles.emptyIconWrap}>
+                                <Ionicons name="videocam-off-outline" size={48} color="rgba(255,255,255,0.3)" />
+                            </View>
+                            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, marginTop: 16 }}>
+                                No live ads available yet
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => { setInitialLoading(true); setPage(1); loadAds(1); }}
+                                style={styles.emptyRefreshBtn}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="refresh" size={18} color="white" />
+                                <Text style={{ color: 'white', fontWeight: '600', marginLeft: 8 }}>Refresh</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : null
                 }
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
@@ -282,45 +439,142 @@ export default function AdsScreen() {
                 snapToAlignment="start"
                 decelerationRate="fast"
                 showsVerticalScrollIndicator={false}
-
-                // --- Infinite Scroll Props ---
-                onEndReached={fetchMoreAds}
-                onEndReachedThreshold={0.1} // Trigger when 10% from the bottom
+                contentContainerStyle={{ paddingBottom: 0 }}
+                onEndReached={initialLoading ? undefined : fetchMoreAds}
+                onEndReachedThreshold={0.1}
                 ListFooterComponent={() =>
-                    loadingMore ? (
-                        <View style={{ height: 100, justifyContent: 'center' }}>
-                            <ActivityIndicator color="white" />
+                    !initialLoading && loadingMore && ads.length > 0 ? (
+                        <View style={{ height: 80, justifyContent: 'center', alignItems: 'center' }}>
+                            <ActivityIndicator color="white" size="small" />
                         </View>
                     ) : null
                 }
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={3}
+                windowSize={3}
             />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: 'black' },
-    itemContainer: { width: width, height: height, position: 'relative' },
+    container: { flex: 1, backgroundColor: '#000' },
+    itemContainer: { width, height, position: 'relative' },
     video: { width: '100%', height: '100%' },
+
+    // Header
+    header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 20,
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+    },
+    headerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    headerLeft: { flexDirection: 'row', alignItems: 'center' },
+    liveIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FF3B30',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+        gap: 6,
+    },
+    liveDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'white',
+    },
+    liveText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 1,
+    },
+    headerTitle: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '700',
+        marginLeft: 12,
+    },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    headerBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    // Progress dots
+    progressContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    progressDot: {
+        height: 3,
+        borderRadius: 2,
+    },
+
+    // Top gradient
+    topGradient: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: height * 0.35,
+        zIndex: 2,
+    },
+
+    // Play overlay
+    playOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 15,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+    },
+    playCircle: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
 
     // Right Sidebar
     rightSidebar: {
         position: 'absolute',
-        right: 10,
-        bottom: 180, // Moved up to make room for bottom content
+        right: 12,
+        bottom: 260,
         alignItems: 'center',
         zIndex: 10,
+        gap: 4,
     },
     profileContainer: {
-        marginBottom: 20,
+        marginBottom: 16,
         position: 'relative',
     },
     avatarBorder: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 2,
-        borderColor: 'white',
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        borderWidth: 2.5,
+        borderColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -331,91 +585,149 @@ const styles = StyleSheet.create({
     },
     followBadge: {
         position: 'absolute',
-        bottom: -8,
-        left: 17, // center horizontally relative to avatar (50/2 - 16/2)
-        backgroundColor: '#FF3B30',
-        width: 18,
-        height: 18,
-        borderRadius: 9,
+        bottom: -6,
+        alignSelf: 'center',
+        backgroundColor: Colors.primary,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#000',
     },
     actionButton: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 14,
     },
     actionText: {
         color: 'white',
-        marginTop: 5,
-        fontSize: 13,
+        marginTop: 4,
+        fontSize: 12,
         fontWeight: '600',
-        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+        textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 3,
     },
 
-    // Bottom Content
-    gradientOverlay: {
+    // Bottom glassmorphism card
+    bottomCard: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        paddingHorizontal: 20,
-        paddingBottom: 20, // Adjust for tab bar if needed
-        paddingTop: 80,
+        zIndex: 10,
+        overflow: 'hidden',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
     },
-    contentContainer: {
-        marginBottom: 60, // Space effectively for bottom tab bar
+    bottomContent: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 40,
+    },
+    storeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 6,
+    },
+    storeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
     },
     storeName: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 8,
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    verifiedBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: 'rgba(59,130,246,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     productName: {
         color: 'white',
-        fontSize: 20,
-        fontWeight: '400',
-        marginBottom: 8,
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 6,
     },
     description: {
-        color: '#e0e0e0',
+        color: 'rgba(255,255,255,0.7)',
         fontSize: 14,
-        marginBottom: 12,
         lineHeight: 20,
+        marginBottom: 12,
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginBottom: 15,
+        marginBottom: 16,
+        gap: 8,
     },
-    currency: {
-        color: '#10B981', // Emerald green
+    currencySymbol: {
+        color: Colors.primary,
         fontSize: 18,
-        fontWeight: 'bold',
-        marginRight: 2,
+        fontWeight: '700',
     },
     price: {
-        color: '#10B981',
-        fontSize: 28,
+        color: 'white',
+        fontSize: 30,
         fontWeight: '800',
     },
+    comparePrice: {
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: 16,
+        textDecorationLine: 'line-through',
+    },
     shopNowBtn: {
-        backgroundColor: '#F59E0B', // Amber/Gold color
+        borderRadius: 14,
+        overflow: 'hidden',
+        elevation: 4,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    shopGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
-        width: '100%', // Full width on mobile feels good for CTA
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        gap: 8,
     },
     shopNowText: {
         color: 'white',
         fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
+        fontWeight: '700',
+    },
+
+    // Empty state
+    emptyIconWrap: {
+        width: 96,
+        height: 96,
+        borderRadius: 48,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    emptyRefreshBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 24,
+        backgroundColor: Colors.primary,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 24,
     },
 });

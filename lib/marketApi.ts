@@ -13,6 +13,11 @@ const handleApiError = (error: any) => {
 };
 
 export const marketAPI = {
+    // Expose core axios methods
+    get: api.get,
+    post: api.post,
+    put: api.put,
+    delete: api.delete,
 
     // --- BROWSING & SEARCH ---
 
@@ -28,21 +33,14 @@ export const marketAPI = {
         }
     },
 
-    /**
-     * Fetch products with optional search and category filters
-     */
-    getProducts: async (searchQuery: string = '', categoryId: number | null = null, storeId: number | null = null) => {
+    // 🟢 Clean, optimized product collection pull
+    getProducts: async () => {
         try {
-            const params: any = {};
-            if (searchQuery) params.search = searchQuery;
-            if (storeId) params.store_id = storeId;
-            // Note: Backend might need to support category filtering specifically if not covered by 'search'
-            // For now, filtering is done on frontend or via the generic search param if configured
-
-            const response = await api.get('/market/products/', { params });
-            return response.data;
+            const response = await api.get('/market/products/');
+            return response.data; // This returns the array of items directly
         } catch (error) {
-            return handleApiError(error);
+            console.error("Error fetching market inventory items:", error);
+            throw error;
         }
     },
 
@@ -192,72 +190,105 @@ export const marketAPI = {
         }
     },
 
-    verifyDeposit: async (reference: string) => {
+    fetchDataHistory: async () => {
+        const response = await api.get('/finance/data/history/');
+        return response.data;
+    },
+
+    fetchDataPlans: async (networkId: string) => {
+        const response = await api.get('/finance/data/plans/', { params: { service_id: networkId } });
+        return response.data.plans;
+    },
+
+    purchaseData: async (data: { service_id: string; variation_code: string; phone: string; amount: number }) => {
+        const response = await api.post('/finance/data/purchase/', data);
+        return response.data;
+    },
+
+    updateBVN: async (bvn: string) => {
+        const response = await api.post('/users/update-bvn/', { bvn });
+        return response.data;
+    },
+
+    setTransactionPin: async (pin: string) => {
+        const response = await api.post('/finance/pin/', { pin });
+        return response.data;
+    },
+
+    addProduct: async (data: any) => {
+        const isPreUploaded =
+            (data.images && data.images.length > 0 && typeof data.images[0] === 'string' && data.images[0].startsWith('http')) ||
+            data.video_url;
+
+        if (isPreUploaded) {
+            try {
+                const response = await api.post('/market/seller/products/add/', data);
+                return response.data;
+            } catch (error: any) {
+                if (error.response) throw error.response.data;
+                throw error;
+            }
+        }
+
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("description", data.description);
+        formData.append("price", data.price);
+        formData.append("stock", data.stock || "1");
+        formData.append("category", data.category || "1");
+        formData.append("is_ad", "true");
+
+        if (data.images && data.images.length > 0) {
+            data.images.forEach((uri: string, index: number) => {
+                // @ts-ignore
+                formData.append("images", {
+                    uri,
+                    name: `prod_img_${index}.jpg`,
+                    type: "image/jpeg",
+                });
+            });
+        }
+
+        if (data.video) {
+            // @ts-ignore
+            formData.append("video", {
+                uri: data.video,
+                name: "seller_video.mp4",
+                type: "video/mp4",
+            });
+            formData.append("resource_type", "video");
+        }
+
         try {
-            const response = await api.post('/finance/deposit/verify/', { reference });
+            const response = await api.post('/market/seller/products/add/', formData, {
+                headers: { "Content-Type": undefined },
+                transformRequest: (data, headers) => {
+                    delete headers['Content-Type'];
+                    return data;
+                },
+                timeout: 300000,
+            });
             return response.data;
         } catch (error) {
+            console.error("Video Upload Error:", error);
             throw error;
         }
     },
 
-    // MONNIFY: Verify Bank Account Name
-    verifyBankAccount: async (accountNumber: string, bankCode: string) => {
-        const response = await api.post('/finance/verify-bank/', {
-            account_number: accountNumber,
-            bank_code: bankCode
-        });
-        return response.data;
-    },
-
-    // MONNIFY: Process Withdrawal
-    initiateWithdrawal: async (amount: number, bankAccountId: number) => {
-        const response = await api.post('/finance/withdraw/', {
-            amount: amount,
-            bank_account_id: bankAccountId
-        });
-        return response.data;
-    },
-
-    confirmOrder: async (orderId: number) => {
+    updateProduct: async (id: number, data: any) => {
         try {
-            const response = await api.post(`/market/orders/${orderId}/confirm/`);
+            const response = await api.patch(`/market/seller/products/${id}/`, data);
             return response.data;
-        } catch (error) {
-            return handleApiError(error);
-        }
-    },
-    createStore: async (data: any) => {
-        // data should contain { name: "My Shop", description: "..." }
-        // and optionally logo/image if your serializer handles multipart
-        const formData = new FormData();
-        formData.append("name", data.name);
-        formData.append("description", data.description);
-        if (data.image) {
-            // @ts-ignore
-            formData.append("logo", {
-                uri: data.image,
-                name: "logo.jpg",
-                type: "image/jpeg",
-            });
-        }
-
-        try {
-            const response = await api.post('/market/store/create/', formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            return response.data;
-        } catch (error) {
-            // @ts-ignore
+        } catch (error: any) {
+            console.error('Update Product Error:', error.response?.status, error.response?.data);
             if (error.response) throw error.response.data;
             throw error;
         }
     },
 
-    // --- SELLER FUNCTIONS ---
     getSellerStats: async () => {
         try {
-            const response = await api.get('/market/seller/stats/');
+            const response = await api.get('/merchant/dashboard-stats/');
             return response.data;
         } catch (error) { throw error; }
     },
@@ -276,79 +307,25 @@ export const marketAPI = {
         } catch (error) { throw error; }
     },
 
-    addProduct: async (data: any) => {
-        // CHECK: If data has 'video_url' or images are already URLs, send as JSON
-        const isPreUploaded =
-            (data.images && data.images.length > 0 && typeof data.images[0] === 'string' && data.images[0].startsWith('http')) ||
-            data.video_url;
-
-        if (isPreUploaded) {
-            try {
-                // Send directly as JSON (Content-Type: application/json is default in api.ts)
-                const response = await api.post('/market/seller/products/add/', data);
-                return response.data;
-            } catch (error) {
-                // @ts-ignore
-                if (error.response) throw error.response.data;
-                throw error;
-            }
-        }
-
-        // --- FALLBACK (Old Way for direct file upload via backend) ---
-        const formData = new FormData();
-
-        // Append text fields
-        formData.append("name", data.name);
-        formData.append("description", data.description);
-        formData.append("price", data.price);
-        formData.append("stock", data.stock || "1");
-        formData.append("category", data.category || "1");
-        formData.append("is_ad", "true"); // Automatically mark products with video as ads
-
-        // Handle Images (Multi-part)
-        if (data.images && data.images.length > 0) {
-            data.images.forEach((uri: string, index: number) => {
-                // @ts-ignore
-                formData.append("images", {
-                    uri,
-                    name: `prod_img_${index}.jpg`,
-                    type: "image/jpeg",
-                });
-            });
-        }
-
-        // Handle Video (Crucial for Requirement #1)
-        if (data.video) {
-            // @ts-ignore
-            formData.append("video", {
-                uri: data.video,
-                name: "seller_video.mp4",
-                type: "video/mp4",
-            });
-            formData.append("resource_type", "video");
-        }
-
+    confirmOrderReceipt: async (orderId: number) => {
         try {
-            const response = await api.post('/market/seller/products/add/', formData, {
-                headers: {
-                    "Content-Type": undefined, // Explicitly unset default JSON header so Axios sets boundary
-                },
-                transformRequest: (data, headers) => {
-                    // @ts-ignore
-                    delete headers['Content-Type']; // Nuclear option to ensure no default leaks
-                    return data;
-                },
-                // Increase timeout for large video files (5 minutes)
-                timeout: 300000,
-            });
+            const response = await api.post(`/market/orders/${orderId}/confirm-receipt/`);
             return response.data;
-        } catch (error) {
-            console.error("Video Upload Error:", error);
+        } catch (error: any) {
+            if (error.response) throw error.response.data;
             throw error;
         }
     },
 
-
+    markOrderDispatched: async (orderId: number) => {
+        try {
+            const response = await api.post(`/market/orders/${orderId}/dispatch/`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response) throw error.response.data;
+            throw error;
+        }
+    },
 
 
 
@@ -516,6 +493,24 @@ export const marketAPI = {
         }
     },
 
+    // --- STORE MANAGEMENT ---
 
+    getMyStore: async () => {
+        try {
+            const response = await api.get('/market/store/detail/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    updateStore: async (data: { name?: string; description?: string; logo?: string }) => {
+        try {
+            const response = await api.patch('/market/store/update/', data);
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
 
 };

@@ -1,183 +1,168 @@
-import { Button } from "@/components/ui/Button";
-import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
-import { useAuth } from "@/context/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from 'react';
+import { Alert, Linking, View, Text, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { Store, Heart, ShoppingBag, MapPin, Grid3X3, Headset, ShoppingCart, User as UserIcon, Wallet, LogOut, Shield, ChevronRight, Lock, Trash2, FileText } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
+import { marketAPI } from '@/lib/marketApi';
+import { apiRequest } from '@/src/services/apiClient';
 
 export default function MoreScreen() {
-  const router = useRouter();
-  const { isSignedIn, logout, userRole, user } = useAuth();
+    const router = useRouter();
+    const { userRole, logout, isSignedIn, user } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const isAdmin = userRole === 'admin' || user?.is_admin === true;
 
-  const MenuLink = ({ icon, title, onPress, color = "#64748B", isLast = false }: any) => (
-    <TouchableOpacity
-      onPress={onPress}
-      className={`flex-row items-center bg-white p-5 ${!isLast ? 'border-b border-slate-50' : ''}`}
-    >
-      <View style={{ backgroundColor: color + '10' }} className="w-9 h-9 rounded-xl items-center justify-center mr-4">
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <Text className="flex-1 text-slate-700 font-semibold text-base">{title}</Text>
-      <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
-    </TouchableOpacity>
-  );
+    const handleMyShopPress = async () => {
+        if (!isSignedIn) { router.push('/(auth)/login'); return; }
+        if (loading) return;
+        try {
+            setLoading(true);
+            const res = await apiRequest('/market/shop/my-status/');
+            const status = res.status;
+            if (status === 'approved' || status === 'pending') router.push('/merchant');
+            else router.push('/merchant/personal-info');
+        } catch {
+            router.push('/merchant');
+        } finally { setLoading(false); }
+    };
 
-  return (
-    <ScreenWrapper bg="bg-gray-50">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* --- DYNAMIC HEADER --- */}
-        <View className="px-6 pt-6 pb-4">
-          <Text className="text-4xl font-black text-gray-900 tracking-tight">Account</Text>
-        </View>
+    const mainActions = [
+        { name: 'My Shop', icon: Store, onPress: handleMyShopPress, color: '#329629', bg: 'bg-green-50' },
+        { name: 'Orders', icon: ShoppingBag, onPress: () => router.push('/orders'), color: '#3B82F6', bg: 'bg-blue-50' },
+        { name: 'Wallet', icon: Wallet, onPress: () => router.push('/wallet'), color: '#F59E0B', bg: 'bg-amber-50' },
+        { name: 'Cart', icon: ShoppingCart, onPress: () => router.push('/(tabs)/cart'), color: '#8B5CF6', bg: 'bg-purple-50' },
+    ];
 
-        {/* --- PROFILE INFO / EDIT SECTION --- */}
-        {isSignedIn ? (
-          <TouchableOpacity
-            onPress={() => router.push("/profile/edit")} // Navigates to edit screen
-            className="mx-4 mb-6 bg-white p-5 rounded-[32px] shadow-sm border border-slate-100 flex-row items-center"
-          >
-            <View className="w-16 h-16 bg-emerald-100 rounded-full items-center justify-center border-4 border-emerald-50">
-              <Text className="text-2xl font-bold text-emerald-700">
-                {user?.fullName?.charAt(0) || user?.email?.charAt(0).toUpperCase()}
-              </Text>
+    const menuItems = [
+        { name: 'Wishlist', icon: Heart, onPress: () => router.push('/(profile)/wishlist'), id: 'wishlist' },
+        { name: 'Addresses', icon: MapPin, onPress: () => router.push('/profile/edit'), id: 'address' },
+        { name: 'Market', icon: Grid3X3, onPress: () => router.push('/(tabs)/markets'), id: 'market' },
+        { name: 'Support', icon: Headset, onPress: () => router.push('/help'), id: 'support' },
+        { name: 'Profile', icon: UserIcon, onPress: () => router.push('/profile/edit'), id: 'profile' },
+        { name: 'Privacy & Security', icon: Lock, onPress: () => router.push('/(profile)/privacy-security'), id: 'privacy' },
+        { name: 'Privacy Policy', icon: FileText, onPress: () => Linking.openURL('https://yusuf-babagana.github.io/glapp-privacy-policy/'), id: 'privacy-policy' },
+    ];
+
+    if (isAdmin) {
+        menuItems.push({ name: 'Admin Panel', icon: Shield, onPress: () => router.push('/admin/dashboard'), id: 'admin' });
+    }
+
+    return (
+        <ScreenWrapper>
+            <View className="px-6 pt-4 pb-4">
+                <Text className="text-2xl font-black text-gray-900">More</Text>
             </View>
 
-            <View className="flex-1 ml-4">
-              <Text className="text-lg font-bold text-gray-900" numberOfLines={1}>
-                {user?.fullName || "Globalink User"}
-              </Text>
-              <Text className="text-gray-500 text-sm" numberOfLines={1}>{user?.email}</Text>
-              <View className="flex-row items-center mt-1">
-                <View className="bg-primary/10 px-2 py-0.5 rounded-md">
-                  <Text className="text-primary text-[10px] font-bold uppercase">{userRole}</Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+                {/* Quick Actions Grid */}
+                <View className="px-6 mb-6">
+                    <View className="flex-row gap-3">
+                        {mainActions.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <TouchableOpacity
+                                    key={item.name}
+                                    onPress={item.onPress}
+                                    className={`${item.bg} rounded-2xl p-4 items-center justify-center flex-1`}
+                                    style={{ shadowColor: item.color, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 }}
+                                >
+                                    <View className="bg-white/80 w-12 h-12 rounded-xl items-center justify-center mb-2">
+                                        <Icon size={24} color={item.color} />
+                                    </View>
+                                    <Text className="text-gray-900 text-xs font-bold text-center">{item.name}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </View>
-              </View>
-            </View>
 
-            <View className="bg-gray-50 p-2 rounded-full">
-              <Ionicons name="settings-outline" size={20} color="#64748B" />
-            </View>
-          </TouchableOpacity>
-        ) : (
-          null
-        )}
-
-        {/* --- GENERAL SETTINGS --- */}
-        <View className="mx-4 bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 mb-6">
-          <MenuLink
-            icon="person-outline"
-            title="Edit Profile Details"
-            onPress={() => router.push("/profile/edit")}
-            color="#6366F1"
-          />
-          {isSignedIn && (
-            <MenuLink
-              icon="wallet-outline"
-              title="My Wallet"
-              onPress={() => router.push("/wallet")}
-              color="#329629"
-            />
-          )}
-          <MenuLink
-            icon="cart-outline"
-            title="My Cart"
-            onPress={() => router.push("/(tabs)/cart")}
-          />
-          <MenuLink
-            icon="help-circle-outline"
-            title="Help & Support"
-            onPress={() => router.push("/help")}
-          />
-          <MenuLink
-            icon="shield-checkmark-outline"
-            title="Privacy & Security"
-            onPress={() => router.push("/privacy")}
-            isLast={true}
-          />
-        </View>
-
-        {/* --- USER ONLY SECTION --- */}
-        {isSignedIn ? (
-          <>
-            {/* --- USER ONLY SECTION --- */}
-            <Text className="px-6 text-gray-400 font-bold text-[10px] uppercase tracking-[2px] mb-3 ml-1">
-              Actions
-            </Text>
-            <View className="mx-4 bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 mb-8">
-              <MenuLink
-                icon="receipt-outline"
-                title="My Orders"
-                onPress={() => router.push("/orders")}
-                color="#3B82F6"
-                isLast={true}
-              />
-            </View>
-
-            {/* --- BUSINESS TOOLS (Role-Specific) --- */}
-            {(userRole === 'seller' || userRole === 'rider') && (
-              <>
-                <Text className="px-6 text-gray-400 font-bold text-[10px] uppercase tracking-[2px] mb-3 ml-1">
-                  Business Tools
-                </Text>
-                <View className="mx-4 bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 mb-6">
-
-                  {/* Show only to Sellers */}
-                  {userRole === 'seller' && (
-                    <MenuLink
-                      icon="storefront-outline"
-                      title="Seller Dashboard"
-                      onPress={() => router.push("/seller/dashboard")}
-                      isLast={userRole !== 'rider'} // Dynamic border handling
-                    />
-                  )}
-
-                  {/* Show only to Riders */}
-                  {userRole === 'rider' && (
-                    <MenuLink
-                      icon="bicycle-outline"
-                      title="Rider Dashboard"
-                      onPress={() => router.push("/rider/dashboard")}
-                      isLast={true}
-                    />
-                  )}
+                {/* Menu List */}
+                <View className="mx-6 bg-white rounded-2xl overflow-hidden" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
+                    {menuItems.map((item, index) => {
+                        const Icon = item.icon;
+                        return (
+                            <TouchableOpacity
+                                key={item.id}
+                                onPress={item.onPress}
+                                className={`flex-row items-center px-5 py-4 ${index < menuItems.length - 1 ? 'border-b border-gray-50' : ''}`}
+                            >
+                                <View className="bg-gray-50 w-10 h-10 rounded-xl items-center justify-center mr-4">
+                                    <Icon size={20} color="#329629" />
+                                </View>
+                                <Text className="text-gray-900 font-bold text-base flex-1">{item.name}</Text>
+                                <ChevronRight size={18} color="#CBD5E1" />
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
-              </>
-            )}
 
-            <View className="mx-6 mt-12 mb-20">
-              <Button
-                title="Sign Out"
-                onPress={async () => {
-                  console.log("Signing out...");
-                  await logout();
-                }}
-                variant="danger"
-                className="bg-red-50"
-                icon={<Ionicons name="log-out-outline" size={20} color="#EF4444" />}
-              />
-            </View>
-          </>
-        ) : (
-          /* --- GUEST ONLY SECTION --- */
-          <View className="p-6 mt-8 mb-20">
-            <View className="bg-primary/10 p-6 rounded-3xl border border-primary/20 items-center">
-              <View className="w-12 h-12 bg-white rounded-full items-center justify-center mb-4">
-                <Ionicons name="person-add-outline" size={24} color="#329629" />
-              </View>
-              <Text className="text-gray-900 font-bold text-lg mb-2">Join Globalink</Text>
-              <Text className="text-gray-500 text-center text-sm mb-6">
-                Sign in to manage your orders, wallet, and store.
-              </Text>
+                {/* Sign Out / Sign In */}
+                <View className="px-6 mt-8">
+                    {isSignedIn ? (
+                        <TouchableOpacity
+                            onPress={async () => { await logout(); }}
+                            className="flex-row items-center justify-center bg-red-50 py-4 rounded-2xl border-2 border-red-100"
+                        >
+                            <LogOut size={20} color="#EF4444" />
+                            <Text className="text-red-500 font-bold ml-2 text-base">Sign Out</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={() => router.push('/(auth)/login')}
+                            className="flex-row items-center justify-center bg-primary py-4 rounded-2xl"
+                            style={{ shadowColor: '#329629', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
+                        >
+                            <UserIcon size={20} color="#FFFFFF" />
+                            <Text className="text-white font-bold ml-2 text-base">Sign In to Continue</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-              <Button
-                title="Login / Register"
-                onPress={() => router.push("/(auth)/login")}
-                className="w-full shadow-lg shadow-primary/20"
-              />
-            </View>
-          </View>
-        )}
-      </ScrollView>
-    </ScreenWrapper>
-  );
+                {isSignedIn && (
+                    <View className="px-6 mt-4 mb-8">
+                        <TouchableOpacity
+                            onPress={() => {
+                                Alert.alert(
+                                    'Delete Account',
+                                    [
+                                        'This will start the 30-day deletion process.',
+                                        'A confirmation email will be sent to your registered email.',
+                                        'You can cancel this request within 30 days from Privacy & Security.',
+                                        '',
+                                        'All personal data will be permanently anonymized after 30 days.',
+                                    ].join(' '),
+                                    [
+                                        { text: 'Cancel', style: 'cancel' },
+                                        {
+                                            text: 'Request Deletion',
+                                            style: 'destructive',
+                                            onPress: () => {
+                                                setDeleting(true);
+                                                apiRequest('/users/request-deletion/', { method: 'POST' })
+                                                  .then(() => Alert.alert('Request Submitted', 'Check your email for confirmation. Your account will be deleted within 30 days.'))
+                                                  .catch((e: any) => Alert.alert('Error', e.message || 'Failed to request deletion.'))
+                                                  .finally(() => setDeleting(false));
+                                            },
+                                        },
+                                    ],
+                                );
+                            }}
+                            disabled={deleting}
+                            className={`flex-row items-center justify-center py-4 rounded-2xl border-2 border-red-200 ${deleting ? 'bg-red-50' : 'bg-red-50/50'}`}
+                        >
+                            {deleting ? (
+                                <ActivityIndicator size="small" color="#F87171" />
+                            ) : (
+                                <Text className="text-red-400 font-bold text-sm">Delete Account</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <Text className="text-center text-gray-300 text-xs mt-6 mb-2">Version 1.0.0</Text>
+            </ScrollView>
+        </ScreenWrapper>
+    );
 }

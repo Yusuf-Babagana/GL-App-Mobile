@@ -103,7 +103,7 @@ export default function KYCUploadScreen() {
             <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-[#1DB954] py-4 rounded-xl items-center shadow-lg shadow-green-200 mb-10"
+                className="bg-primary py-4 rounded-xl items-center shadow-lg shadow-green-200 mb-10"
             >
                 {isSubmitting ? (
                     <ActivityIndicator color="white" />

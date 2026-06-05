@@ -2,7 +2,8 @@ import SafeScreen from "@/components/SafeScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { apiRequest } from "@/src/services/apiClient";
 
 type SecurityOption = {
   id: string;
@@ -20,6 +21,7 @@ function PrivacyAndSecurityScreen() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [shareData, setShareData] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const securitySettings: SecurityOption[] = [
     {
@@ -100,6 +102,18 @@ function PrivacyAndSecurityScreen() {
       icon: "download-outline",
       title: "Download Your Data",
       description: "Get a copy of your data",
+    },
+    {
+      id: "privacy-policy",
+      icon: "document-text-outline",
+      title: "Privacy Policy",
+      description: "Read our privacy policy",
+    },
+    {
+      id: "terms",
+      icon: "newspaper-outline",
+      title: "Terms of Service",
+      description: "Read our terms of service",
     },
   ];
 
@@ -218,6 +232,13 @@ function PrivacyAndSecurityScreen() {
               key={setting.id}
               className="bg-surface rounded-2xl p-4 mb-3"
               activeOpacity={0.7}
+              onPress={() => {
+                if (setting.id === 'privacy-policy') {
+                  router.push('/privacy-policy');
+                } else if (setting.id === 'terms') {
+                  Linking.openURL('https://yusuf-babagana.github.io/glapp-privacy-policy/');
+                }
+              }}
             >
               <View className="flex-row items-center">
                 <View className="bg-primary/20 rounded-full w-12 h-12 items-center justify-center mr-4">
@@ -240,6 +261,31 @@ function PrivacyAndSecurityScreen() {
           <TouchableOpacity
             className="bg-surface rounded-2xl p-5 flex-row items-center justify-between border-2 border-red-500/20"
             activeOpacity={0.7}
+            onPress={() => {
+              Alert.alert(
+                'Delete Account',
+                'This will start the 30-day deletion process. A confirmation email will be sent to your registered email. You can cancel this request anytime within the 30-day grace period.\n\nAll personal data will be permanently anonymized after 30 days.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Request Deletion',
+                    style: 'destructive',
+                    onPress: async () => {
+                      setDeleting(true);
+                      try {
+                        await apiRequest('/users/request-deletion/', { method: 'POST' });
+                        Alert.alert('Request Submitted', 'Check your email for confirmation. Your account will be deleted within 30 days.');
+                      } catch (e: any) {
+                        Alert.alert('Error', e.message || 'Failed to request deletion.');
+                      } finally {
+                        setDeleting(false);
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
+            disabled={deleting}
           >
             <View className="flex-row items-center">
               <View className="bg-red-500/20 rounded-full w-12 h-12 items-center justify-center mr-4">

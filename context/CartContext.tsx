@@ -41,7 +41,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             setCartItems(data.items);
             setCartTotal(data.total_price);
         } catch (error) {
-            console.log("Error fetching cart:", error);
         }
     };
 
@@ -61,7 +60,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             await fetchCart();
             Alert.alert("Success", "Item added to cart!");
         } catch (error: any) {
-            console.log("Add to cart error:", error);
             Alert.alert("Error", error.error || "Could not add item.");
         } finally {
             setIsLoading(false);
@@ -75,7 +73,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             await marketAPI.removeFromCart(itemId); // <--- API Call
             await fetchCart(); // Sync to be sure
         } catch (error) {
-            console.log("Remove error:", error);
             Alert.alert("Error", "Could not remove item.");
             await fetchCart(); // Revert on error
         }

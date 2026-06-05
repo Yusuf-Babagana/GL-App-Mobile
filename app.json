@@ -1,23 +1,36 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "Globalink",
+    "slug": "GLAPP",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "GLAPP",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile",
+      "bundleIdentifier": "com.globalinkmarketplace.app",
       "statusBarHidden": false,
-      "statusBarStyle": "dark-content"
+      "statusBarStyle": "dark-content",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Globalink needs access to your photo library to let you upload a profile picture.",
+        "NSCameraUsageDescription": "Globalink needs camera access to let you take a profile picture.",
+        "NSLocationWhenInUseUsageDescription": "Globalink uses your location to show nearby stores and services.",
+        "NSNotificationsUsageDescription": "Globalink sends notifications for order updates and promotions."
+      }
     },
     "android": {
-      "package": "com.anonymous.mobile",
+      "package": "com.globalinkmarketplace.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
       "permissions": [
-        "INTERNET",
+        "INTERNET"
+      ],
+      "blockedPermissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
@@ -25,7 +38,21 @@
         "backgroundColor": "#FFFFFF",
         "translucent": false,
         "barStyle": "dark-content"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "GLAPP",
+              "host": "*",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -45,20 +72,19 @@
           }
         }
       ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "ecommerce-tut",
-          "organization": "codesistency-gs"
-        }
-      ],
       "expo-web-browser",
       "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d83bbee6-83a0-44eb-9111-1f440548640f"
+      }
+    },
+    "owner": "babagana1"
   }
 }

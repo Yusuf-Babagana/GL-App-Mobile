@@ -1,177 +1,273 @@
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
-import { useCart } from "@/context/CartContext";
-import { marketAPI } from "@/lib/marketApi"; // Import API
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, TextInput, StatusBar } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { useCart } from '@/context/CartContext';
+import { useWallet } from '@/context/WalletContext';
+import { marketAPI } from '@/lib/marketApi';
+import { Ionicons } from '@expo/vector-icons';
+
+const WALLET_PAY_API = '/market/orders/wallet-pay/';
 
 export default function CheckoutScreen() {
-    const router = useRouter();
-    const { cartTotal, cartItems, refreshCart } = useCart();
-    const [selectedPayment, setSelectedPayment] = useState<"card" | "transfer">("card");
-    const [isProcessing, setIsProcessing] = useState(false);
+  const router = useRouter();
+  const { cartItems, cartTotal, refreshCart } = useCart();
+  const { balance, refreshWallet } = useWallet();
+  const [submitting, setSubmitting] = useState(false);
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
 
-    // Shipping Address State
-    const [address, setAddress] = useState("");
-    const [city, setCity] = useState("");
-    const [phone, setPhone] = useState("");
+  const walletBalance = parseFloat(balance) || 0;
+  const orderTotal = Number(cartTotal) || 0;
+  const sufficient = walletBalance >= orderTotal;
+  const shortfall = orderTotal - walletBalance;
 
-    const handlePayment = async () => {
-        // 1. Validation
-        if (!address.trim() || !city.trim() || !phone.trim()) {
-            Alert.alert("Missing Details", "Please fill in all delivery information.");
-            return;
-        }
+  const handlePayWithWallet = async () => {
+    if (!address.trim() || !city.trim() || !phone.trim()) {
+      Alert.alert('Missing Info', 'Please enter your delivery address, city, and phone number.');
+      return;
+    }
+    if (!pin || pin.length !== 4) {
+      Alert.alert('Invalid PIN', 'Please enter your 4-digit transaction PIN.');
+      return;
+    }
 
-        setIsProcessing(true);
+    try {
+      setSubmitting(true);
 
-        try {
-            // 2. Call API to create order
-            await marketAPI.placeOrder({
-                address,
-                city,
-                phone
-            });
+      const items = cartItems.map((item) => ({
+        product_id: item.product,
+        quantity: item.quantity,
+      }));
 
-            // 3. Refresh Cart (empties it)
-            await refreshCart();
+      const orderRes = await marketAPI.placeOrder(
+        { address: address.trim(), city: city.trim(), phone: phone.trim() },
+        items,
+        pin,
+      );
 
-            // 4. Success & Redirect
-            Alert.alert("Order Placed", "Your order has been received successfully!", [
-                { text: "View Orders", onPress: () => router.replace("/orders") }
-                // Using replace to prevent going back to checkout
-            ]);
-        } catch (error: any) {
-            console.log("Checkout Error:", error);
+      const orderId = orderRes.order_id || orderRes.id;
 
-            if (error.error === "Insufficient Funds" && error.required) {
-                Alert.alert(
-                    "Insufficient Funds",
-                    `You need ₦${Number(error.required).toLocaleString()} but your balance is ₦${Number(error.balance || 0).toLocaleString()}. Please fund your wallet.`,
-                    [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Fund Wallet", onPress: () => router.push("/wallet") }
-                    ]
-                );
-            } else {
-                Alert.alert("Checkout Failed", error.error || error.detail || "Something went wrong. Please try again.");
-            }
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+      await marketAPI.post(WALLET_PAY_API, { order_id: orderId });
 
-    return (
-        <ScreenWrapper bg="bg-gray-50">
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+      await refreshCart();
+      await refreshWallet();
+
+      Alert.alert('Payment Successful 🎉', 'Your order has been placed successfully!', [
+        { text: 'View Orders', onPress: () => router.replace('/orders') },
+      ]);
+    } catch (error: any) {
+      const data = error?.response?.data ?? error;
+      const isStockIssue =
+        data?.status === 'out_of_stock' ||
+        /insufficient stock volume/i.test(
+          data?.message || data?.error || data?.detail || '',
+        ) ||
+        ((error?.response?.status ?? 0) === 400 &&
+          /stock|quantity|inventory/i.test(
+            JSON.stringify(data || {}),
+          ));
+
+      if (isStockIssue) {
+        Alert.alert(
+          'Stock Discrepancy 📦',
+          data?.message ||
+            data?.error ||
+            'Requested quantity exceeds available stock limit.',
+        );
+      } else {
+        const msg =
+          data?.message ||
+          data?.error ||
+          data?.detail ||
+          error?.error ||
+          error?.message ||
+          'Transaction failed. Please try again.';
+        Alert.alert('Payment Failed', msg);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {submitting && (
+        <View className="absolute inset-0 z-50 bg-white/80 items-center justify-center">
+          <ActivityIndicator size="large" color="#16A34A" />
+          <Text className="text-gray-500 font-bold text-xs mt-3">Processing your payment...</Text>
+        </View>
+      )}
+
+      <View className="px-6 py-4 bg-white border-b border-slate-100 flex-row items-center">
+        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mr-4">
+          <Ionicons name="arrow-back" size={24} color="#1E293B" />
+        </TouchableOpacity>
+        <Text className="text-xl font-black text-slate-900">Checkout</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <Text className="text-slate-900 text-lg font-black mb-4">Order Summary</Text>
+
+        <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
+          {cartItems.map((item) => (
+            <View key={item.id} className="flex-row justify-between items-center mb-3">
+              <View className="flex-1 mr-4">
+                <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
+                  {item.product_name}
+                </Text>
+                <Text className="text-gray-500 text-xs font-semibold mt-0.5">
+                  Qty: {item.quantity} × ₦{Number(item.product_price).toLocaleString()}
+                </Text>
+              </View>
+              <Text className="text-slate-900 font-black">
+                ₦{(Number(item.product_price) * item.quantity).toLocaleString()}
+              </Text>
+            </View>
+          ))}
+
+          <View className="h-px bg-gray-100 my-3" />
+
+          <View className="flex-row justify-between items-center">
+            <Text className="text-slate-900 font-black text-lg">Order Total</Text>
+            <Text className="text-primary font-black text-2xl">₦{orderTotal.toLocaleString()}</Text>
+          </View>
+        </View>
+
+        <Text className="text-slate-900 text-lg font-black mb-3">Delivery Details</Text>
+
+        <View className="mb-5">
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Address</Text>
+          <TextInput
+            className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
+            placeholder="No. 123, Street Name"
+            placeholderTextColor="#94A3B8"
+            value={address}
+            onChangeText={setAddress}
+            editable={!submitting}
+          />
+        </View>
+
+        <View className="mb-5">
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">City / Local Area</Text>
+          <TextInput
+            className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
+            placeholder="Your city"
+            placeholderTextColor="#94A3B8"
+            value={city}
+            onChangeText={setCity}
+            editable={!submitting}
+          />
+        </View>
+
+        <View className="mb-8">
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Phone Number</Text>
+          <TextInput
+            className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
+            placeholder="080..."
+            placeholderTextColor="#94A3B8"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            editable={!submitting}
+          />
+        </View>
+
+        <Text className="text-slate-900 text-lg font-black mb-3">Payment Method</Text>
+
+        <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
+          <View className="flex-row items-center mb-4">
+            <View className="w-12 h-12 rounded-2xl bg-primary-container items-center justify-center mr-3">
+              <Ionicons name="wallet" size={24} color="#329629" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-slate-900 font-bold text-base">GLAPP Wallet</Text>
+              <Text className="text-gray-500 text-xs font-semibold">
+                Balance: ₦{walletBalance.toLocaleString()}
+              </Text>
+            </View>
+            <View className="bg-primary-container px-3 py-1 rounded-lg">
+              <Text className="text-primary-dark font-black text-xs uppercase">Default</Text>
+            </View>
+          </View>
+
+          <View className="h-px bg-gray-100 my-1" />
+
+          <View className="flex-row justify-between items-center py-3">
+            <Text className="text-gray-500 text-sm font-semibold">Wallet Balance</Text>
+            <Text className="text-slate-900 font-black text-base">₦{walletBalance.toLocaleString()}</Text>
+          </View>
+          <View className="flex-row justify-between items-center pb-3">
+            <Text className="text-gray-500 text-sm font-semibold">Order Total</Text>
+            <Text className="text-slate-900 font-black text-base">₦{orderTotal.toLocaleString()}</Text>
+          </View>
+
+          {!sufficient && (
+            <View className="bg-red-50 border border-red-100 rounded-2xl p-4 mt-2">
+              <Text className="text-red-700 font-bold text-xs">
+                Insufficient Wallet Balance. Please fund your account to continue.
+              </Text>
+              <Text className="text-red-500 text-xs font-medium mt-1">
+                Shortfall: ₦{shortfall.toLocaleString()}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push('/wallet')}
+                className="bg-red-600 mt-3 py-3 rounded-xl items-center"
+              >
+                <Text className="text-white font-bold text-xs">Fund Wallet</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <Text className="text-slate-900 text-lg font-black mb-3">Transaction PIN</Text>
+
+        <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
+          <Text className="text-gray-500 text-xs font-bold mb-2 ml-1 uppercase">
+            Enter 4-Digit Transaction PIN
+          </Text>
+          <TextInput
+            className="bg-gray-50 border border-gray-200 p-4 rounded-2xl text-slate-900 font-black text-lg tracking-[8px] text-center"
+            placeholder="• • • •"
+            placeholderTextColor="#CBD5E1"
+            secureTextEntry={true}
+            keyboardType="numeric"
+            maxLength={4}
+            value={pin}
+            onChangeText={setPin}
+            editable={!submitting}
+          />
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={handlePayWithWallet}
+          disabled={!sufficient || submitting || pin.length !== 4}
+          className={`w-full py-5 rounded-2xl items-center mb-6 ${!sufficient ? 'bg-gray-300' : 'bg-primary'}`}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="lock-closed" size={18} color={!sufficient ? '#94A3B8' : '#FFFFFF'} />
+            <Text
+              className={`font-black text-sm ml-2 ${!sufficient ? 'text-gray-400' : 'text-white'}`}
             >
-                {/* Header */}
-                <View className="px-6 py-4 bg-white border-b border-gray-100 flex-row items-center">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                        <Ionicons name="arrow-back" size={24} color="#1E293B" />
-                    </TouchableOpacity>
-                    <Text className="text-xl font-bold text-gray-900">Checkout</Text>
-                </View>
+              {submitting
+                ? 'Processing...'
+                : `Pay ₦${orderTotal.toLocaleString()}`}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
-                <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
-
-                    {/* Order Summary */}
-                    <Text className="text-gray-900 font-bold text-lg mb-4">Order Summary</Text>
-                    <Card className="mb-8">
-                        {cartItems.map((item) => (
-                            <View key={item.id} className="flex-row justify-between mb-2">
-                                <Text className="text-gray-600 flex-1 mr-4" numberOfLines={1}>
-                                    {item.quantity}x {item.product_name}
-                                </Text>
-                                <Text className="text-gray-900 font-medium">
-                                    ₦{(Number(item.product_price) * item.quantity).toLocaleString()}
-                                </Text>
-                            </View>
-                        ))}
-                        <View className="h-[1px] bg-gray-100 my-3" />
-                        <View className="flex-row justify-between">
-                            <Text className="text-gray-900 font-bold text-lg">Total</Text>
-                            <Text className="text-primary font-bold text-xl">
-                                ₦{Number(cartTotal).toLocaleString()}
-                            </Text>
-                        </View>
-                    </Card>
-
-                    {/* Delivery Address Input */}
-                    <Text className="text-gray-900 font-bold text-lg mb-4">Delivery Details</Text>
-                    <View className="space-y-4 mb-8">
-                        <View>
-                            <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Address</Text>
-                            <TextInput
-                                className="bg-white border border-gray-200 p-4 rounded-xl text-gray-900"
-                                placeholder="No. 123, Street Name"
-                                value={address}
-                                onChangeText={setAddress}
-                            />
-                        </View>
-
-                        <View className="flex-row gap-4">
-                            <View className="flex-1">
-                                <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">City / State</Text>
-                                <TextInput
-                                    className="bg-white border border-gray-200 p-4 rounded-xl text-gray-900"
-                                    placeholder="Kano"
-                                    value={city}
-                                    onChangeText={setCity}
-                                />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Phone</Text>
-                                <TextInput
-                                    className="bg-white border border-gray-200 p-4 rounded-xl text-gray-900"
-                                    placeholder="080..."
-                                    keyboardType="phone-pad"
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                />
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Payment Method */}
-                    <Text className="text-gray-900 font-bold text-lg mb-4">Payment Method</Text>
-                    <View className="gap-4 mb-8">
-                        <TouchableOpacity
-                            onPress={() => setSelectedPayment("card")}
-                            className={`p-4 rounded-xl border-2 flex-row items-center ${selectedPayment === "card" ? "bg-primary/5 border-primary" : "bg-white border-gray-100"}`}
-                        >
-                            <Ionicons name="card" size={24} color={selectedPayment === "card" ? "#329629" : "#9CA3AF"} />
-                            <Text className={`font-bold ml-3 ${selectedPayment === "card" ? "text-primary" : "text-gray-900"}`}>Pay with Card</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => setSelectedPayment("transfer")}
-                            className={`p-4 rounded-xl border-2 flex-row items-center ${selectedPayment === "transfer" ? "bg-primary/5 border-primary" : "bg-white border-gray-100"}`}
-                        >
-                            <Ionicons name="wallet" size={24} color={selectedPayment === "transfer" ? "#329629" : "#9CA3AF"} />
-                            <Text className={`font-bold ml-3 ${selectedPayment === "transfer" ? "text-primary" : "text-gray-900"}`}>Bank Transfer</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                </ScrollView>
-
-                {/* Footer */}
-                <View className="p-6 bg-white border-t border-gray-100 pb-10">
-                    <Button
-                        title={isProcessing ? "Processing..." : `Pay ₦${Number(cartTotal).toLocaleString()}`}
-                        onPress={handlePayment}
-                        loading={isProcessing}
-                        size="lg"
-                        icon={!isProcessing ? <Ionicons name="lock-closed" size={18} color="white" /> : undefined}
-                    />
-                </View>
-            </KeyboardAvoidingView>
-        </ScreenWrapper>
-    );
+        {!sufficient && (
+          <Text className="text-gray-500 text-xs font-medium text-center mb-6">
+            Insufficient Wallet Balance. Please fund your account to continue.
+          </Text>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

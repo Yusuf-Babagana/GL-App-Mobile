@@ -1,8 +1,9 @@
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from 'expo-image';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Image, Modal, Text, TouchableOpacity, View } from "react-native";
+import { Alert, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
 
 export default function AdminKYCRequests() {
     const router = useRouter();
@@ -13,7 +14,7 @@ export default function AdminKYCRequests() {
         try {
             const data = await marketAPI.getPendingKYC();
             setRequests(data);
-        } catch (e) { console.log(e); }
+        } catch (e) { }
     };
 
     useEffect(() => { fetchRequests(); }, []);
@@ -86,7 +87,7 @@ export default function AdminKYCRequests() {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => handleAction(selectedUser.id, 'approve')}
-                                    className="flex-1 bg-green-600 py-4 rounded-xl items-center"
+                                    className="flex-1 bg-primary py-4 rounded-xl items-center"
                                 >
                                     <Text className="text-white font-bold">Approve</Text>
                                 </TouchableOpacity>

@@ -1,16 +1,26 @@
 // app/_layout.tsx
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { WalletProvider } from "@/context/WalletContext";
+import { OnboardingProvider } from "@/context/OnboardingContext";
 import "@/lib/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Constants, { ExecutionEnvironment } from 'expo-constants'; // Added for environment check
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react"; // Added useEffect
+import { useEffect } from "react";
 import { LogBox, View } from "react-native";
 import "../global.css";
+
+if (typeof ErrorUtils !== 'undefined') {
+  const originalHandler = ErrorUtils.getGlobalHandler && ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((error: any, isFatal: boolean) => {
+    console.debug('[Crash]', isFatal ? 'FATAL' : 'CAUGHT', error?.message || error);
+    if (originalHandler) originalHandler(error, isFatal);
+  });
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,24 +53,27 @@ export default function RootLayout() {
         }),
       });
     } else {
-      console.log("🔔 Notifications: Running in Expo Go. Notification setup skipped to prevent crash.");
+
     }
   }, [isExpoGo]);
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <QueryClientProvider client={queryClient}>
-          <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }}>
-              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="seller/dashboard" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-            </Stack>
-          </View>
-        </QueryClientProvider>
-      </CartProvider>
+      <WalletProvider>
+        <OnboardingProvider>
+          <CartProvider>
+            <QueryClientProvider client={queryClient}>
+              <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                <StatusBar style="dark" />
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }}>
+                  <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                </Stack>
+              </View>
+            </QueryClientProvider>
+          </CartProvider>
+        </OnboardingProvider>
+      </WalletProvider>
     </AuthProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from 'react';
@@ -21,7 +22,7 @@ export default function RiderSettings() {
                 <View className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
                     <TouchableOpacity className="flex-row items-center justify-between py-3 border-b border-gray-50">
                         <View className="flex-row items-center">
-                            <Ionicons name="person-circle-outline" size={24} color="#10b981" />
+                            <Ionicons name="person-circle-outline" size={24} color={Colors.primary} />
                             <Text className="ml-3 font-bold">Edit Profile</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="gray" />
@@ -31,7 +32,7 @@ export default function RiderSettings() {
                         className="flex-row items-center justify-between py-3"
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="shield-checkmark-outline" size={24} color="#10b981" />
+                            <Ionicons name="shield-checkmark-outline" size={24} color={Colors.primary} />
                             <Text className="ml-3 font-bold">Verification (KYC)</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="gray" />
@@ -43,14 +44,14 @@ export default function RiderSettings() {
                 <View className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
                     <TouchableOpacity className="flex-row items-center justify-between py-3 border-b border-gray-50">
                         <View className="flex-row items-center">
-                            <Ionicons name="help-buoy-outline" size={24} color="#10b981" />
+                            <Ionicons name="help-buoy-outline" size={24} color={Colors.primary} />
                             <Text className="ml-3 font-bold">Rider Guide</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="gray" />
                     </TouchableOpacity>
                     <TouchableOpacity className="flex-row items-center justify-between py-3">
                         <View className="flex-row items-center">
-                            <Ionicons name="call-outline" size={24} color="#10b981" />
+                            <Ionicons name="call-outline" size={24} color={Colors.primary} />
                             <Text className="ml-3 font-bold">Contact Support</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="gray" />

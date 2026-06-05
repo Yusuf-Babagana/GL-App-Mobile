@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -15,7 +16,7 @@ export default function OrderListScreen() {
             const data = await marketAPI.getMyOrders();
             setOrders(data.results || data);
         } catch (e) {
-            console.log(e);
+
         } finally {
             setIsLoading(false);
         }
@@ -32,8 +33,8 @@ export default function OrderListScreen() {
                     <Text className="font-bold text-gray-900 text-lg">Order #{item.id}</Text>
                     <Text className="text-gray-500 text-xs mt-1">{new Date(item.created_at).toDateString()}</Text>
                 </View>
-                <View className={`px-3 py-1 rounded-full ${item.delivery_status === 'delivered' ? 'bg-green-100' : 'bg-orange-100'}`}>
-                    <Text className={`text-[10px] font-bold uppercase ${item.delivery_status === 'delivered' ? 'text-green-700' : 'text-orange-700'}`}>
+                <View className={`px-3 py-1 rounded-full ${item.delivery_status === 'delivered' ? 'bg-primary-container' : 'bg-orange-100'}`}>
+                    <Text className={`text-[10px] font-bold uppercase ${item.delivery_status === 'delivered' ? 'text-primary-dark' : 'text-orange-700'}`}>
                         {item.delivery_status.replace("_", " ")}
                     </Text>
                 </View>
@@ -42,7 +43,7 @@ export default function OrderListScreen() {
             <View className="h-[1px] bg-gray-50 w-full mb-3" />
 
             <View className="flex-row justify-between items-center">
-                <Text className="text-[#1DB954] font-bold text-xl">₦{Number(item.total_price).toLocaleString()}</Text>
+                <Text className="text-primary font-bold text-xl">₦{Number(item.total_price).toLocaleString()}</Text>
                 <TouchableOpacity
                     onPress={() => {
                         // Ensure item.id exists and is a valid number before pushing
@@ -50,7 +51,6 @@ export default function OrderListScreen() {
                         if (orderId && !isNaN(orderId)) {
                             router.push(`/orders/${orderId}`);
                         } else {
-                            console.error("DEBUG: Attempted to navigate with invalid ID:", orderId);
                             Alert.alert("Error", "Order ID is invalid. Please refresh.");
                         }
                     }}
@@ -77,7 +77,7 @@ export default function OrderListScreen() {
 
             {isLoading ? (
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator color="#1DB954" />
+                    <ActivityIndicator color={Colors.primary} />
                 </View>
             ) : (
                 <FlatList

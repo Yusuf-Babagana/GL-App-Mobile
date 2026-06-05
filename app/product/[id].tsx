@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/Button";
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { chatApi } from "@/lib/chatApi";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -35,9 +34,9 @@ export default function ProductDetailScreen() {
     if (!isSignedIn) {
       Alert.alert(
         "Login Required",
-        "You need to sign in to purchase items.",
+        "Please login to add items to your cart and start shopping!",
         [
-          { text: "Cancel", style: "cancel" },
+          { text: "Later", style: "cancel" },
           { text: "Login", onPress: () => router.push("/(auth)/login") }
         ]
       );
@@ -87,6 +86,7 @@ export default function ProductDetailScreen() {
       <View className="absolute top-12 left-6 z-10">
         <TouchableOpacity
           onPress={() => router.back()}
+          activeOpacity={0.7}
           className="w-10 h-10 bg-white/90 rounded-full items-center justify-center shadow-sm backdrop-blur-md border border-gray-100"
         >
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
@@ -127,24 +127,33 @@ export default function ProductDetailScreen() {
             {/* Location Badge */}
             <View className="flex-row items-center mt-1 mb-2">
               <Ionicons name="location" size={12} color="#9CA3AF" />
-              <Text className="text-gray-400 text-xs ml-1">Ships from {product.store?.location || "Kano, Nigeria"}</Text>
+              <Text className="text-gray-500 text-xs ml-1">Ships from {product.store?.location || "Nigeria"}</Text>
             </View>
 
-            {/* Chat Button (Only shows if owner_id exists) */}
-            {product.store?.owner_id && (
+            {/* Chat Button (Only shows if seller info exists) */}
+            {(product.seller_id || product.store?.owner_id || product.store?.user_id) && (
               <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={async () => {
-                  try {
-                    const data = await chatApi.startConversation(product.store.owner_id, product.id);
-
-                    // Pass the conversation ID and the Store Name to the next screen
-                    router.push({
-                      pathname: "/chat/[userId]",
-                      params: { userId: product.store.owner_id, name: product.store.name }
-                    });
-                  } catch (e: any) {
-                    Alert.alert("Chat Error", e.message || "Could not start conversation");
+                  if (!isSignedIn) {
+                    Alert.alert("Login Required", "Please login to chat with sellers.", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Login", onPress: () => router.push("/(auth)/login") }
+                    ]);
+                    return;
                   }
+
+                  const sellerId = product.seller_id || product.store?.owner_id || product.store?.user_id;
+
+                  if (!sellerId) {
+                    Alert.alert("Error", "Seller information is missing.");
+                    return;
+                  }
+
+                  router.push({
+                    pathname: "/chat/[id]",
+                    params: { id: sellerId, name: product.store?.name || "Seller" }
+                  });
                 }}
                 className="bg-blue-50 px-3 py-1.5 rounded-full flex-row items-center"
               >
@@ -163,11 +172,12 @@ export default function ProductDetailScreen() {
           {/* Related Video */}
           {product.video_url && (
             <View className="mb-6">
-              <Text className="text-gray-900 font-bold text-lg mb-3">Product Video</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/live')}
-                className="w-full h-48 rounded-2xl overflow-hidden bg-black items-center justify-center relative"
-              >
+              <Text className="text-slate-900 font-bold text-lg mb-3">Product Video</Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/live')}
+                  activeOpacity={0.7}
+                  className="w-full h-48 rounded-2xl overflow-hidden bg-black items-center justify-center relative"
+                >
                 <Image
                   source={{ uri: product.image }}
                   className="w-full h-full opacity-60"

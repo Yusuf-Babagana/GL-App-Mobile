@@ -10,7 +10,7 @@ interface ScreenWrapperProps extends ViewProps {
 
 export function ScreenWrapper({
     children,
-    bg = "bg-white",
+    bg = "bg-background",
     safeAreaTop = true,
     safeAreaBottom = false,
     className,
@@ -20,7 +20,7 @@ export function ScreenWrapper({
 
     return (
         <View
-            className={`flex-1 ${bg} ${className}`}
+            className={`flex-1 ${bg} ${className || ""}`}
             style={{
                 paddingTop: safeAreaTop ? insets.top : 0,
                 paddingBottom: safeAreaBottom ? insets.bottom : 0

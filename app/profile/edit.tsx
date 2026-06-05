@@ -2,22 +2,53 @@ import { Button } from "@/components/ui/Button";
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/lib/api";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function EditProfileScreen() {
     const router = useRouter();
     const { user, fetchProfile } = useAuth();
 
-    const [fullName, setFullName] = useState(user?.fullName || "");
-    const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+    const [fullName, setFullName] = useState(user?.full_name || user?.fullName || "");
+    const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || user?.phoneNumber || "");
     const [email, setEmail] = useState(user?.email || "");
+    const [imageUrl, setImageUrl] = useState(user?.imageUrl || "");
 
     // UI State
     const [isLoading, setIsLoading] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    const handlePickImage = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert("Permission Required", "We need access to your photo library to select a profile picture.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (result.canceled) return;
+
+        try {
+            setUploadingImage(true);
+            const url = await uploadToCloudinary(result.assets[0].uri, false);
+            setImageUrl(url);
+        } catch (e: any) {
+            Alert.alert("Upload Failed", e.message || "Could not upload image. Please try again.");
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
     const validate = () => {
         const newErrors: { [key: string]: string } = {};
@@ -32,7 +63,7 @@ export default function EditProfileScreen() {
             newErrors.email = "Invalid email format";
         }
 
-        // Phone Validation (basic length check for now, specific to Kano logistics usually 11 digits)
+        // Phone Validation
         if (!phoneNumber.trim()) {
             newErrors.phoneNumber = "Phone number is required";
         } else if (phoneNumber.length < 10) {
@@ -50,11 +81,15 @@ export default function EditProfileScreen() {
             setIsLoading(true);
 
             // 1. Send Update to Backend
-            await updateProfile({
+            const payload: Record<string, any> = {
                 full_name: fullName,
-                email: email, // Note: Changing email might require re-verification depending on backend logic
-                phone_number: phoneNumber
-            });
+                email: email,
+                phone_number: phoneNumber,
+            };
+            if (imageUrl) {
+                payload.imageUrl = imageUrl;
+            }
+            await updateProfile(payload);
 
             // 2. Refresh Context
             await fetchProfile();
@@ -64,7 +99,6 @@ export default function EditProfileScreen() {
             ]);
 
         } catch (e: any) {
-            console.log("Profile Update Error:", e);
             Alert.alert("Update Failed", e.response?.data?.detail || "Could not update profile. Please try again.");
         } finally {
             setIsLoading(false);
@@ -87,21 +121,27 @@ export default function EditProfileScreen() {
                     </View>
 
                     <View className="px-6 mt-4">
-                        {/* Avatar Placeholder */}
+                        {/* Avatar */}
                         <View className="items-center mb-8">
-                            <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-3 overflow-hidden border-4 border-white shadow-sm">
-                                {user?.imageUrl ? (
-                                    /* If you have an image component, use it here. For now, text fallback */
-                                    <Text className="text-4xl">📷</Text>
-                                ) : (
-                                    <Text className="text-4xl font-bold text-gray-400">
-                                        {fullName.charAt(0).toUpperCase()}
-                                    </Text>
-                                )}
-                            </View>
-                            <TouchableOpacity className="bg-primary/10 px-4 py-2 rounded-full">
-                                <Text className="text-primary font-bold text-xs">Change Photo</Text>
-                            </TouchableOpacity>
+                    <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-3 overflow-hidden border-4 border-gray-100">
+                        {imageUrl ? (
+                            <Image source={{ uri: imageUrl }} className="w-full h-full rounded-full" />
+                        ) : (
+                            <Text className="text-4xl font-bold text-gray-400">
+                                {fullName.charAt(0).toUpperCase()}
+                            </Text>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        onPress={handlePickImage}
+                        disabled={uploadingImage}
+                        activeOpacity={0.7}
+                        className="bg-primary/10 px-4 py-2 rounded-full"
+                    >
+                        <Text className="text-primary font-bold text-xs">
+                            {uploadingImage ? "Uploading..." : "Change Photo"}
+                        </Text>
+                    </TouchableOpacity>
                         </View>
 
                         {/* Form Fields */}

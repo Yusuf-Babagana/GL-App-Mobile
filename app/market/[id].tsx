@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -17,13 +18,12 @@ export default function StorePublicView() {
         const fetchStoreData = async () => {
             try {
                 // Fetch store details and all products
-                const [storeData, allProducts] = await Promise.all([
+                const [storeData, data] = await Promise.all([
                     marketAPI.getStoreDetail(id as string),
-                    marketAPI.getProducts()
+                    marketAPI.getProducts('', null, parseInt(id as string))
                 ]);
                 setStore(storeData);
-                // Filter products to only show those belonging to this store
-                const storeProducts = allProducts.filter((p: any) => p.store === parseInt(id as string) || p.store?.id === parseInt(id as string));
+                const storeProducts = data?.results ?? [];
                 setProducts(storeProducts);
             } catch (e) {
                 console.error(e);
@@ -34,18 +34,18 @@ export default function StorePublicView() {
         fetchStoreData();
     }, [id]);
 
-    if (loading) return <ActivityIndicator size="large" color="#10B981" className="flex-1" />;
+    if (loading) return <ActivityIndicator size="large" color={Colors.primary} className="flex-1" />;
 
     return (
         <View className="flex-1 bg-background">
             {/* Header / Banner */}
             <LinearGradient
-                colors={['#14532D', '#329629']}
+                colors={[Colors.primaryDark, Colors.primary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 className="pt-14 pb-10 px-6 rounded-b-[40px] shadow-lg shadow-primary/30"
             >
-                <TouchableOpacity onPress={() => router.back()} className="mb-6 w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} className="mb-6 w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
                     <Ionicons name="arrow-back" size={24} color="white" />
                 </TouchableOpacity>
 
@@ -56,7 +56,7 @@ export default function StorePublicView() {
                     <View className="flex-1 justify-center">
                         <View className="flex-row items-center mb-1">
                             <Text className="text-white text-2xl font-black mr-2 tracking-tight leading-7">{store?.name}</Text>
-                            {store?.is_verified && <Ionicons name="checkmark-circle" size={18} color="#DCFCE7" />}
+                            {store?.is_verified && <Ionicons name="checkmark-circle" size={18} color={Colors.primaryContainer} />}
                         </View>
                         <Text className="text-primary-container text-xs font-medium bg-primary-dark/30 self-start px-2 py-1 rounded-lg overflow-hidden border border-white/10">
                             {store?.product_count} Products Available
@@ -77,7 +77,7 @@ export default function StorePublicView() {
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         onPress={() => router.push(`/product/${item.id}`)}
-                        activeOpacity={0.9}
+                        activeOpacity={0.7}
                         className="w-[48%] mb-4 bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden"
                         style={{
                             shadowColor: "#64748B",

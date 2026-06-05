@@ -66,7 +66,7 @@ const languageDetector = {
                 return callback(savedLanguage);
             }
         } catch (error) {
-            console.log('Error reading language', error);
+
         }
         // 2. Fallback to phone's default language
         const bestLanguage = Localization.getLocales()[0]?.languageCode || 'en';
@@ -76,7 +76,7 @@ const languageDetector = {
         try {
             await AsyncStorage.setItem(STORE_LANGUAGE_KEY, language);
         } catch (error) {
-            console.log('Error saving language', error);
+
         }
     },
 };

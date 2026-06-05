@@ -1,8 +1,8 @@
-// app/(tabs)/_layout.tsx - Updated Professional Flow
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
@@ -13,23 +13,46 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#329629", // Primary Green
-        tabBarInactiveTintColor: "#94A3B8", // Slate Gray
+        tabBarActiveTintColor: "#329629",
+        tabBarInactiveTintColor: "#94A3B8",
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: "#ffffff",
-          borderTopWidth: 1,
-          borderTopColor: "#f1f5f9",
-          height: 65 + insets.bottom,
-          paddingBottom: insets.bottom + 5,
-          paddingTop: 10,
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 24 : 16,
+          left: 16,
+          right: 16,
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          borderRadius: 28,
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 72 : 68,
+          paddingBottom: 0,
+          paddingTop: 8,
+          elevation: 12,
+          shadowColor: '#329629',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.3)',
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: "800",
-          textTransform: "uppercase",
-          letterSpacing: 0.5
+          letterSpacing: 0.2,
+          marginTop: 2,
         },
-        headerShown: false,
+        tabBarItemStyle: {
+          paddingVertical: 2,
+        },
+        tabBarBackground: () => (
+          <View style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            borderRadius: 28,
+            backgroundColor: 'rgba(255,255,255,0.85)',
+          }} />
+        ),
       }}
     >
       <Tabs.Screen
@@ -37,38 +60,53 @@ export default function TabsLayout() {
         options={{
           title: "Products",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "grid" : "grid-outline"} size={22} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "grid" : "grid-outline"} size={22} color={color} />
+            </View>
           ),
         }}
       />
-
-      {/* Video Ads Tab (Live) */}
       <Tabs.Screen
         name="live"
         options={{
-          title: "Live",
+          title: "Ads",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={24} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
-
       <Tabs.Screen
-        name="markets" // You will create/rename a file to markets.tsx
+        name="markets"
         options={{
-          title: "Markets",
+          title: "Market",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "storefront" : "storefront-outline"} size={22} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "cart" : "cart-outline"} size={22} color={color} />
+            </View>
           ),
         }}
       />
-
+      <Tabs.Screen
+        name="data"
+        options={{
+          title: "Data",
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "wifi" : "wifi-outline"} size={24} color={color} />
+            </View>
+          ),
+        }}
+      />
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Chat",
+          title: "Chats",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={22} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={22} color={color} />
+            </View>
           ),
         }}
       />
@@ -77,9 +115,11 @@ export default function TabsLayout() {
         options={{
           title: "Cart",
           tabBarBadge: cartCount > 0 ? cartCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#EF4444', color: 'white', fontSize: 10, fontWeight: 'bold' },
+          tabBarBadgeStyle: { backgroundColor: '#EF4444', color: 'white', fontSize: 10, fontWeight: 'bold', minWidth: 18, height: 18, lineHeight: 18 },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cart" : "cart-outline"} size={24} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "basket" : "basket-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -88,7 +128,9 @@ export default function TabsLayout() {
         options={{
           title: "More",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "ellipsis-horizontal-circle" : "ellipsis-horizontal-circle-outline"} size={24} color={color} />
+            <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
+              <Ionicons name={focused ? "ellipsis-horizontal" : "ellipsis-horizontal-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
