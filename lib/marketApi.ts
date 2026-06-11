@@ -226,9 +226,11 @@ export const marketAPI = {
 
     verifyBankAccount: async (accountNumber: string, bankCode: string) => {
         try {
-            const response = await api.post('/finance/verify-account/', {
-                account_number: accountNumber,
-                bank_code: bankCode,
+            const response = await api.get('/finance/verify-bank/', {
+                params: {
+                    account_number: accountNumber,
+                    bank_code: bankCode,
+                },
             });
             const data = response.data;
             return typeof data === 'string' ? data : data.account_name || data.name || data;
