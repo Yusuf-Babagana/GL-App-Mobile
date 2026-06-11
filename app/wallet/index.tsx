@@ -47,7 +47,7 @@ export default function WalletScreen() {
             const lastSeenId = await AsyncStorage.getItem(LAST_SEEN_TXN_KEY);
             const newTxns = txns.filter(
                 (t: any) =>
-                    (t.type === 'escrow_release' || t.type === 'deposit') &&
+                    ((t.transaction_type || t.type) === 'escrow_release' || (t.transaction_type || t.type) === 'deposit') &&
                     Number(t.id) > Number(lastSeenId || 0)
             );
 
