@@ -27,3 +27,19 @@ export const getOptimizedImageUrl = (url: string | null | undefined) => {
   }
   return url;
 };
+
+export const normalizeData = (data: any) => {
+  if (Array.isArray(data)) {
+    return data.map(item => normalizeItem(item));
+  }
+  return normalizeItem(data);
+};
+
+const normalizeItem = (item: any) => {
+  if (!item) return item;
+  return {
+    ...item,
+    _id: item._id || String(item.id),
+    averageRating: item.average_rating ?? item.averageRating,
+  };
+};

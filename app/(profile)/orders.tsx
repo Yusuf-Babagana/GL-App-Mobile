@@ -9,8 +9,10 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 
 function OrdersScreen() {
+  const { t } = useTranslation();
   const { data: orders, isLoading, isError } = useOrders();
   const { createReviewAsync, isCreatingReview } = useReviews();
 
@@ -37,7 +39,7 @@ function OrdersScreen() {
     // check if all products have been rated
     const allRated = Object.values(productRatings).every((rating) => rating > 0);
     if (!allRated) {
-      Alert.alert("Error", "Please rate all products");
+      Alert.alert(t('error'), t('rate_all_products'));
       return;
     }
 
@@ -52,12 +54,12 @@ function OrdersScreen() {
         })
       );
 
-      Alert.alert("Success", "Thank you for rating all products!");
+      Alert.alert(t('success'), t('thank_you_rating'));
       setShowRatingModal(false);
       setSelectedOrder(null);
       setProductRatings({});
     } catch (error: any) {
-      Alert.alert("Error", error?.response?.data?.error || "Failed to submit rating");
+      Alert.alert(t('error'), error?.response?.data?.error || t('failed_submit_rating'));
     }
   };
 
@@ -68,7 +70,7 @@ function OrdersScreen() {
         <TouchableOpacity onPress={() => router.back()} className="mr-4">
           <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text className="text-text-primary text-2xl font-bold">My Orders</Text>
+        <Text className="text-text-primary text-2xl font-bold">{t('my_orders')}</Text>
       </View>
 
       {isLoading ? (
@@ -142,7 +144,7 @@ function OrdersScreen() {
 
                   <View className="border-t border-background-lighter pt-3 flex-row justify-between items-center">
                     <View>
-                      <Text className="text-text-secondary text-xs mb-1">{totalItems} items</Text>
+                      <Text className="text-text-secondary text-xs mb-1">{totalItems} {t('items')}</Text>
                       <Text className="text-primary font-bold text-xl">
                         ${order.totalPrice.toFixed(2)}
                       </Text>
@@ -152,7 +154,7 @@ function OrdersScreen() {
                       (order.hasReviewed ? (
                         <View className="bg-primary/20 px-5 py-3 rounded-full flex-row items-center">
                           <Ionicons name="checkmark-circle" size={18} color="#1DB954" />
-                          <Text className="text-primary font-bold text-sm ml-2">Reviewed</Text>
+                          <Text className="text-primary font-bold text-sm ml-2">{t('reviewed')}</Text>
                         </View>
                       ) : (
                         <TouchableOpacity
@@ -162,7 +164,7 @@ function OrdersScreen() {
                         >
                           <Ionicons name="star" size={18} color="#121212" />
                           <Text className="text-background font-bold text-sm ml-2">
-                            Leave Rating
+                            {t('leave_rating')}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -191,33 +193,36 @@ function OrdersScreen() {
 export default OrdersScreen;
 
 function LoadingUI() {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center">
       <ActivityIndicator size="large" color="#00D9FF" />
-      <Text className="text-text-secondary mt-4">Loading orders...</Text>
+      <Text className="text-text-secondary mt-4">{t('loading_orders')}</Text>
     </View>
   );
 }
 
 function ErrorUI() {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-6">
       <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
-      <Text className="text-text-primary font-semibold text-xl mt-4">Failed to load orders</Text>
+      <Text className="text-text-primary font-semibold text-xl mt-4">{t('failed_load_orders')}</Text>
       <Text className="text-text-secondary text-center mt-2">
-        Please check your connection and try again
+        {t('check_connection')}
       </Text>
     </View>
   );
 }
 
 function EmptyUI() {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-6">
       <Ionicons name="receipt-outline" size={80} color="#666" />
-      <Text className="text-text-primary font-semibold text-xl mt-4">No orders yet</Text>
+      <Text className="text-text-primary font-semibold text-xl mt-4">{t('no_orders_yet')}</Text>
       <Text className="text-text-secondary text-center mt-2">
-        Your order history will appear here
+        {t('order_history_empty')}
       </Text>
     </View>
   );

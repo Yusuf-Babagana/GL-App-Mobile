@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from "@/src/services/apiClient";
 
 type SecurityOption = {
@@ -15,6 +16,7 @@ type SecurityOption = {
 };
 
 function PrivacyAndSecurityScreen() {
+  const { t } = useTranslation();
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -27,23 +29,23 @@ function PrivacyAndSecurityScreen() {
     {
       id: "password",
       icon: "lock-closed-outline",
-      title: "Change Password",
-      description: "Update your account password",
+      title: t('change_password'),
+      description: t('change_password_desc'),
       type: "navigation",
     },
     {
       id: "two-factor",
       icon: "shield-checkmark-outline",
-      title: "Two-Factor Authentication",
-      description: "Add an extra layer of security",
+      title: t('two_factor'),
+      description: t('two_factor_desc'),
       type: "toggle",
       value: twoFactorEnabled,
     },
     {
       id: "biometric",
       icon: "finger-print-outline",
-      title: "Biometric Login",
-      description: "Use Face ID or Touch ID",
+      title: t('biometric'),
+      description: t('biometric_desc'),
       type: "toggle",
       value: biometricEnabled,
     },
@@ -53,32 +55,32 @@ function PrivacyAndSecurityScreen() {
     {
       id: "push",
       icon: "notifications-outline",
-      title: "Push Notifications",
-      description: "Receive push notifications",
+      title: t('push_notifications'),
+      description: t('push_notifications_desc'),
       type: "toggle",
       value: pushNotifications,
     },
     {
       id: "email",
       icon: "mail-outline",
-      title: "Email Notifications",
-      description: "Receive order updates via email",
+      title: t('email_notifications'),
+      description: t('email_notifications_desc'),
       type: "toggle",
       value: emailNotifications,
     },
     {
       id: "marketing",
       icon: "megaphone-outline",
-      title: "Marketing Emails",
-      description: "Receive promotional emails",
+      title: t('marketing_emails'),
+      description: t('marketing_emails_desc'),
       type: "toggle",
       value: marketingEmails,
     },
     {
       id: "data",
       icon: "analytics-outline",
-      title: "Share Usage Data",
-      description: "Help us improve the app",
+      title: t('share_usage_data'),
+      description: t('share_usage_data_desc'),
       type: "toggle",
       value: shareData,
     },
@@ -88,32 +90,32 @@ function PrivacyAndSecurityScreen() {
     {
       id: "activity",
       icon: "time-outline",
-      title: "Account Activity",
-      description: "View recent login activity",
+      title: t('account_activity'),
+      description: t('account_activity_desc'),
     },
     {
       id: "devices",
       icon: "phone-portrait-outline",
-      title: "Connected Devices",
-      description: "Manage devices with access",
+      title: t('connected_devices'),
+      description: t('connected_devices_desc'),
     },
     {
       id: "data-download",
       icon: "download-outline",
-      title: "Download Your Data",
-      description: "Get a copy of your data",
+      title: t('download_data'),
+      description: t('download_data_desc'),
     },
     {
       id: "privacy-policy",
       icon: "document-text-outline",
-      title: "Privacy Policy",
-      description: "Read our privacy policy",
+      title: t('privacy_policy_title') || t('privacy_policy'),
+      description: t('privacy_policy_desc'),
     },
     {
       id: "terms",
       icon: "newspaper-outline",
-      title: "Terms of Service",
-      description: "Read our terms of service",
+      title: t('terms_service'),
+      description: t('terms_service_desc'),
     },
   ];
 
@@ -147,7 +149,7 @@ function PrivacyAndSecurityScreen() {
         <TouchableOpacity onPress={() => router.back()} className="mr-4">
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text className="text-text-primary text-2xl font-bold">Privacy & Security</Text>
+        <Text className="text-text-primary text-2xl font-bold">{t('privacy_security_title') || t('privacy_security')}</Text>
       </View>
 
       <ScrollView
@@ -155,9 +157,8 @@ function PrivacyAndSecurityScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
       >
-        {/* SECURITY SETTING */}
         <View className="px-6 pt-6">
-          <Text className="text-text-primary text-lg font-bold mb-4">Security</Text>
+          <Text className="text-text-primary text-lg font-bold mb-4">{t('security')}</Text>
 
           {securitySettings.map((setting) => (
             <TouchableOpacity
@@ -196,7 +197,7 @@ function PrivacyAndSecurityScreen() {
 
         {/* Privacy Section */}
         <View className="px-6 pt-4">
-          <Text className="text-text-primary text-lg font-bold mb-4">Privacy</Text>
+          <Text className="text-text-primary text-lg font-bold mb-4">{t('privacy')}</Text>
 
           {privacySettings.map((setting) => (
             <View key={setting.id}>
@@ -225,7 +226,7 @@ function PrivacyAndSecurityScreen() {
 
         {/* ACCOUNT SECTION */}
         <View className="px-6 pt-4">
-          <Text className="text-text-primary text-lg font-bold mb-4">Account</Text>
+          <Text className="text-text-primary text-lg font-bold mb-4">{t('account')}</Text>
 
           {accountSettings.map((setting) => (
             <TouchableOpacity
@@ -263,20 +264,20 @@ function PrivacyAndSecurityScreen() {
             activeOpacity={0.7}
             onPress={() => {
               Alert.alert(
-                'Delete Account',
-                'This will start the 30-day deletion process. A confirmation email will be sent to your registered email. You can cancel this request anytime within the 30-day grace period.\n\nAll personal data will be permanently anonymized after 30 days.',
+                t('delete_account_title'),
+                t('delete_account_msg'),
                 [
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('cancel'), style: 'cancel' },
                   {
-                    text: 'Request Deletion',
+                    text: t('request_deletion'),
                     style: 'destructive',
                     onPress: async () => {
                       setDeleting(true);
                       try {
                         await apiRequest('/users/request-deletion/', { method: 'POST' });
-                        Alert.alert('Request Submitted', 'Check your email for confirmation. Your account will be deleted within 30 days.');
+                        Alert.alert(t('deletion_submitted'), t('deletion_email'));
                       } catch (e: any) {
-                        Alert.alert('Error', e.message || 'Failed to request deletion.');
+                        Alert.alert(t('error'), e.message || t('transaction_failed'));
                       } finally {
                         setDeleting(false);
                       }
@@ -292,8 +293,8 @@ function PrivacyAndSecurityScreen() {
                 <Ionicons name="trash-outline" size={24} color="#EF4444" />
               </View>
               <View>
-                <Text className="text-red-500 font-bold text-base mb-1">Delete Account</Text>
-                <Text className="text-text-secondary text-sm">Permanently delete your account</Text>
+                <Text className="text-red-500 font-bold text-base mb-1">{t('delete_account_title')}</Text>
+                <Text className="text-text-secondary text-sm">{t('permanently_delete')}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#EF4444" />
@@ -305,8 +306,7 @@ function PrivacyAndSecurityScreen() {
           <View className="bg-primary/10 rounded-2xl p-4 flex-row">
             <Ionicons name="information-circle-outline" size={24} color="#1DB954" />
             <Text className="text-text-secondary text-sm ml-3 flex-1">
-              We take your privacy seriously. Your data is encrypted and stored securely. You can
-              manage your privacy settings at any time.
+              {t('privacy_serious')}
             </Text>
           </View>
         </View>

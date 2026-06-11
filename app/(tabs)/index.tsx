@@ -5,6 +5,8 @@ import { ProductCard } from '@/components/dashboard/ProductCard';
 import { marketAPI } from '@/lib/marketApi';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const SkeletonCard = () => {
   const opacity = new Animated.Value(0.3);
@@ -26,6 +28,7 @@ const SkeletonCard = () => {
 };
 
 export default function ExploreScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +55,7 @@ export default function ExploreScreen() {
         <View className="flex-row items-center bg-white rounded-2xl px-4 py-3.5 border-2 border-gray-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 }}>
           <Search size={20} color="#94A3B8" />
           <TextInput
-            placeholder="Search products..."
+            placeholder={t('search_products')}
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -67,17 +70,20 @@ export default function ExploreScreen() {
             <View className="flex-1 pr-4">
               <View className="flex-row items-center mb-2">
                 <Sparkles size={16} color="#FFF" />
-                <Text className="text-white/80 text-xs font-bold ml-1.5 uppercase tracking-widest">Featured</Text>
+                <Text className="text-white/80 text-xs font-bold ml-1.5 uppercase tracking-widest">{t('featured')}</Text>
               </View>
               <Text className="text-white text-xl font-black leading-tight">
-                Shop Smarter on GlApp
+                {t('shop_smarter')}
               </Text>
-              <Text className="text-white/70 text-sm mt-1 font-medium">Discover amazing deals today</Text>
+              <Text className="text-white/70 text-sm mt-1 font-medium">{t('discover_deals')}</Text>
             </View>
             <View className="w-20 h-20 rounded-full bg-white/15 items-center justify-center">
               <ShoppingBag size={36} color="white" />
             </View>
           </View>
+        </View>
+        <View className="-mt-1 mb-3">
+          <LanguageSwitcher />
         </View>
       </View>
 
@@ -104,8 +110,8 @@ export default function ExploreScreen() {
               <View className="bg-gray-50 p-6 rounded-full mb-4">
                 <ShoppingBag size={48} color="#CBD5E1" />
               </View>
-              <Text className="text-gray-400 font-bold text-lg">No products found</Text>
-              <Text className="text-gray-300 text-sm mt-1">Check back later for new arrivals</Text>
+              <Text className="text-gray-400 font-bold text-lg">{t('no_products')}</Text>
+              <Text className="text-gray-300 text-sm mt-1">{t('check_later')}</Text>
             </View>
           }
         />

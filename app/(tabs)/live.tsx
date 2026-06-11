@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -99,7 +99,7 @@ const ProgressDots = ({ total, active }: { total: number; active: number }) => {
     );
 };
 
-const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
+const VideoAdItem = ({ item, isVisible, screenActive }: { item: Ad; isVisible: boolean; screenActive: boolean }) => {
     const router = useRouter();
     const finalVideoUrl = getVideoUrl(item.video_url || item.video || '');
     const [isPlaying, setIsPlaying] = useState(true);
@@ -126,15 +126,14 @@ const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
     }, [isVisible]);
 
     useEffect(() => {
-        if (isVisible && isPlaying && player && finalVideoUrl) {
-            player.play();
-        } else if (player) {
-            player.pause();
-            if (!isVisible) {
-                player.currentTime = 0;
-            }
+        if (!screenActive || !isVisible) {
+            player?.pause();
+            return;
         }
-    }, [isVisible, isPlaying, player, finalVideoUrl]);
+        if (isPlaying && player && finalVideoUrl) {
+            player.play();
+        }
+    }, [isVisible, isPlaying, player, finalVideoUrl, screenActive]);
 
     const togglePlay = () => setIsPlaying(prev => !prev);
 
@@ -229,14 +228,15 @@ const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
                         { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
                     ]}
                 >
-                    <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+                    <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} pointerEvents="none" />
                     <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.3)']}
                         style={StyleSheet.absoluteFill}
+                        pointerEvents="none"
                     />
 
                     <View style={styles.bottomContent}>
-                        <View style={styles.storeRow}>
+                        <TouchableOpacity style={styles.storeRow} activeOpacity={0.7} onPress={() => router.push(`/product/${item.id}`)}>
                             <View style={styles.storeBadge}>
                                 <Ionicons name="storefront" size={14} color={Colors.primary} />
                                 <Text style={styles.storeName}>@{item.store_name || 'GL Store'}</Text>
@@ -244,9 +244,11 @@ const VideoAdItem = ({ item, isVisible }: { item: Ad; isVisible: boolean }) => {
                             <View style={styles.verifiedBadge}>
                                 <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
-                        <Text style={styles.productName}>{item.name}</Text>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push(`/product/${item.id}`)}>
+                            <Text style={styles.productName}>{item.name}</Text>
+                        </TouchableOpacity>
 
                         {item.description ? (
                             <Text numberOfLines={2} style={styles.description}>
@@ -351,6 +353,15 @@ export default function AdsScreen() {
 
     useEffect(() => { loadAds(1); }, []);
 
+    const [screenActive, setScreenActive] = useState(true);
+
+    useFocusEffect(
+        useCallback(() => {
+            setScreenActive(true);
+            return () => setScreenActive(false);
+        }, [])
+    );
+
     const fetchMoreAds = () => {
         if (!loadingMore && hasMore) {
             const nextPage = page + 1;
@@ -371,8 +382,8 @@ export default function AdsScreen() {
     }).current;
 
     const renderItem = useCallback(({ item, index }: { item: Ad; index: number }) => (
-        <VideoAdItem item={item} isVisible={index === activeIndex} />
-    ), [activeIndex]);
+        <VideoAdItem item={item} isVisible={index === activeIndex} screenActive={screenActive} />
+    ), [activeIndex, screenActive]);
 
     const keyExtractor = useCallback((item: Ad, index: number) =>
         item.id?.toString() || index.toString(), []);

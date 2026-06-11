@@ -90,7 +90,10 @@ export const marketAPI = {
         try {
             const response = await api.get('/market/cart/');
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
+            if (error.response?.status === 400 && error.response?.data?.message?.includes('empty')) {
+                return { items: [], total_price: 0 };
+            }
             return handleApiError(error);
         }
     },
@@ -124,12 +127,34 @@ export const marketAPI = {
     // --- ORDER & CHECKOUT ---
 
     /**
-     * Place an order (Checkout)
+     * Checkout (multiple cart items, pays via wallet in one call)
      */
-    placeOrder: async (shippingAddress: { address: string; city: string; phone: string }) => {
+    checkout: async (payload: {
+        items: { product_id: number; quantity: number }[];
+        shipping_address: { address: string; city: string; phone: string };
+        payment_method?: string;
+        pin?: string;
+    }) => {
         try {
-            const payload = { shipping_address: shippingAddress };
-            const response = await api.post('/market/orders/create/', payload);
+            const response = await api.post('/market/checkout/', payload);
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    /**
+     * Buy now (single product, immediate purchase with wallet)
+     */
+    buyNow: async (payload: {
+        product_id: number;
+        quantity: number;
+        shipping_address: { address: string; city: string; phone: string };
+        payment_method?: string;
+        pin?: string;
+    }) => {
+        try {
+            const response = await api.post('/market/buy-now/', payload);
             return response.data;
         } catch (error) {
             return handleApiError(error);
@@ -309,7 +334,7 @@ export const marketAPI = {
 
     confirmOrderReceipt: async (orderId: number) => {
         try {
-            const response = await api.post(`/market/orders/${orderId}/confirm-receipt/`);
+            const response = await api.post(`/market/buyer/orders/${orderId}/confirm/`);
             return response.data;
         } catch (error: any) {
             if (error.response) throw error.response.data;
@@ -319,7 +344,7 @@ export const marketAPI = {
 
     markOrderDispatched: async (orderId: number) => {
         try {
-            const response = await api.post(`/market/orders/${orderId}/dispatch/`);
+            const response = await api.patch(`/market/seller/orders/${orderId}/`, { delivery_status: 'shipped' });
             return response.data;
         } catch (error: any) {
             if (error.response) throw error.response.data;
@@ -328,29 +353,6 @@ export const marketAPI = {
     },
 
 
-
-    acceptDelivery: async (orderId: number) => {
-        try {
-            const response = await api.post(`/market/rider/orders/${orderId}/accept/`, {});
-            return response.data;
-        } catch (error) {
-            // @ts-ignore
-            if (error.response) throw error.response.data;
-            throw error;
-        }
-    },
-
-    riderUpdateStatus: async (orderId: number, status: 'picked_up' | 'delivered', pin?: string) => {
-        try {
-            // The key must be 'pin' to match request.data.get('pin')
-            const payload = { status, pin: pin };
-            const response = await api.post(`/market/rider/orders/${orderId}/update/`, payload);
-            return response.data;
-        } catch (error: any) {
-            if (error.response) throw error.response.data;
-            throw error;
-        }
-    },
 
     getAdminStats: async () => {
         try {
@@ -413,7 +415,6 @@ export const marketAPI = {
 
 
     getOrderDetail: async (id: string | string[]) => {
-        // This uses your central API instance which should have the Token interceptor
         const response = await api.get(`/market/seller/orders/${id}/`);
         return response.data;
     },
@@ -471,27 +472,6 @@ export const marketAPI = {
         } catch (error) { throw error; }
     },
 
-
-    // --- RIDER FUNCTIONS ---
-    getAvailableDeliveries: async () => {
-        try {
-            // Updated to match the backend path in Step 1
-            const response = await api.get('/market/rider/orders/available/');
-            return response.data;
-        } catch (error) {
-            return handleApiError(error);
-        }
-    },
-
-    getRiderActiveDeliveries: async () => {
-        try {
-            // Updated to match the backend path in Step 1
-            const response = await api.get('/market/rider/orders/active/');
-            return response.data;
-        } catch (error) {
-            return handleApiError(error);
-        }
-    },
 
     // --- STORE MANAGEMENT ---
 

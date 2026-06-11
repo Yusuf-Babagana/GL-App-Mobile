@@ -6,8 +6,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 
 export default function CartScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { cartItems, cartTotal, removeFromCart, isLoading } = useCart();
 
@@ -23,8 +25,8 @@ export default function CartScreen() {
     <ScreenWrapper>
       <View className="flex-1">
         <View className="px-6 pt-4 pb-4 bg-white">
-          <Text className="text-2xl font-black text-gray-900">My Cart</Text>
-          <Text className="text-gray-400 text-sm font-medium mt-0.5">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</Text>
+          <Text className="text-2xl font-black text-gray-900">{t('my_cart')}</Text>
+          <Text className="text-gray-400 text-sm font-medium mt-0.5">{cartItems.length} {cartItems.length === 1 ? t('item') : t('items')}</Text>
         </View>
 
         {cartItems.length === 0 ? (
@@ -32,22 +34,44 @@ export default function CartScreen() {
             <View className="bg-gray-50 w-24 h-24 rounded-3xl items-center justify-center mb-6">
               <Ionicons name="cart-outline" size={48} color="#CBD5E1" />
             </View>
-            <Text className="text-xl font-bold text-gray-900 mb-1">Your cart is empty</Text>
+            <Text className="text-xl font-bold text-gray-900 mb-1">{t('cart_empty')}</Text>
             <Text className="text-gray-400 text-center mb-8 px-8 font-medium">
-              Looks like you haven't added anything yet
+              {t('cart_empty_desc')}
             </Text>
             <Button
-              title="Start Shopping"
+              title={t('start_shopping')}
               onPress={() => router.push("/(tabs)")}
               size="lg"
             />
           </View>
         ) : (
-          <View className="flex-1">
+          <>
+            <View className="mx-5 mb-3 bg-white px-5 pt-4 pb-5 rounded-2xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
+              <View className="flex-row justify-between mb-2">
+                <Text className="text-gray-400 font-medium">{t('subtotal')}</Text>
+                <Text className="text-gray-900 font-bold">₦{Number(cartTotal).toLocaleString()}</Text>
+              </View>
+              <View className="flex-row justify-between mb-3">
+                <Text className="text-gray-400 font-medium">{t('delivery')}</Text>
+                <Text className="text-green-600 font-bold">{t('free')}</Text>
+              </View>
+              <View className="h-px bg-gray-100 mb-3" />
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-base font-black text-gray-900">{t('total')}</Text>
+                <Text className="text-xl font-black text-primary">₦{Number(cartTotal).toLocaleString()}</Text>
+              </View>
+              <Button
+                title={t('proceed_checkout')}
+                onPress={() => router.push("/checkout")}
+                size="lg"
+                icon={<Ionicons name="arrow-forward" size={20} color="white" />}
+              />
+            </View>
+
             <FlatList
               data={cartItems}
               keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ padding: 20, paddingBottom: 180 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
                 <View className="flex-row bg-white p-3.5 rounded-2xl mb-3.5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
@@ -63,7 +87,7 @@ export default function CartScreen() {
                         {item.product_name}
                       </Text>
                       <View className="flex-row items-center mt-1">
-                        <Text className="text-gray-400 text-xs font-medium">Qty: {item.quantity}</Text>
+                        <Text className="text-gray-400 text-xs font-medium">{t('qty')}: {item.quantity}</Text>
                       </View>
                     </View>
                     <View className="flex-row justify-between items-center">
@@ -89,29 +113,7 @@ export default function CartScreen() {
                 </View>
               )}
             />
-
-            <View className="absolute bottom-0 left-0 right-0 bg-white px-6 pt-5 pb-8 rounded-t-[32px]" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 8 }}>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-gray-400 font-medium">Subtotal</Text>
-                <Text className="text-gray-900 font-bold">₦{Number(cartTotal).toLocaleString()}</Text>
-              </View>
-              <View className="flex-row justify-between mb-5">
-                <Text className="text-gray-400 font-medium">Delivery</Text>
-                <Text className="text-green-600 font-bold">Free</Text>
-              </View>
-              <View className="h-px bg-gray-100 mb-5" />
-              <View className="flex-row justify-between items-center mb-5">
-                <Text className="text-lg font-black text-gray-900">Total</Text>
-                <Text className="text-2xl font-black text-primary">₦{Number(cartTotal).toLocaleString()}</Text>
-              </View>
-              <Button
-                title="Proceed to Checkout"
-                onPress={() => router.push("/checkout")}
-                size="lg"
-                icon={<Ionicons name="arrow-forward" size={20} color="white" />}
-              />
-            </View>
-          </View>
+          </>
         )}
       </View>
     </ScreenWrapper>

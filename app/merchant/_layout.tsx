@@ -55,10 +55,8 @@ export default function MerchantFolderLayout() {
         }
       }
     } catch {
-      if (pathname === '/merchant' || pathname === '/merchant/') {
-        router.replace('/merchant/personal-info');
-        return;
-      }
+      // Network or auth error — don't assume no shop exists (would show form to existing owners).
+      // Let the consumer screen decide what to render.
     } finally {
       evaluated.current = true;
       setChecking(false);

@@ -1,5 +1,4 @@
 import { Colors } from "@/constants/Colors";
-import { useAuth } from "@/context/AuthContext";
 import { marketAPI } from "@/lib/marketApi";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,9 +6,9 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
 export default function OrderDetailScreen() {
-    const { id } = useLocalSearchParams();
+    const { id, role } = useLocalSearchParams();
+    const isSellerRole = role === 'seller';
     const router = useRouter();
-    const { user: currentUser } = useAuth();
     const [order, setOrder] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -19,10 +18,20 @@ export default function OrderDetailScreen() {
 
         try {
             setIsLoading(true);
-            const data = await marketAPI.getOrderById(Number(id));
-            setOrder(data);
-        } catch (e) {
+            if (isSellerRole) {
+                const data = await marketAPI.getOrderDetail(String(id));
+                setOrder(data);
+            } else {
+                const data = await marketAPI.getOrderById(Number(id));
+                setOrder(data);
+            }
+        } catch {
+            try {
+                const data = await marketAPI.getOrderDetail(String(id));
+                setOrder(data);
+            } catch {
 
+            }
         } finally {
             setIsLoading(false);
         }
@@ -84,8 +93,8 @@ export default function OrderDetailScreen() {
         );
     }
 
-    const isSeller = order.store?.owner_id === currentUser?.id;
-    const isBuyer = order.buyer?.id === currentUser?.id;
+    const isSeller = isSellerRole;
+    const isBuyer = !isSellerRole;
 
     return (
         <View className="flex-1 bg-gray-50">
@@ -111,36 +120,6 @@ export default function OrderDetailScreen() {
 
             <ScrollView className="flex-1 px-6 pt-6">
 
-                {/* Delivery PIN (For tracking) */}
-                {isBuyer && order.delivery_code && order.delivery_status !== 'delivered' && (
-                    <View className="bg-blue-50 p-5 rounded-3xl mb-4 border border-blue-100 items-center">
-                        <Text className="text-blue-600 font-bold uppercase text-xs mb-1">Confirmation Code</Text>
-                        <Text className="text-3xl font-black text-blue-700 tracking-widest">{order.delivery_code}</Text>
-                        <Text className="text-blue-500 text-[10px] mt-2 text-center">Share this code with the rider upon delivery.</Text>
-                    </View>
-                )}
-
-                {/* Rider Section */}
-                {order.rider && (
-                    <View className="bg-white p-5 rounded-3xl mb-4 border border-gray-100 flex-row items-center justify-between">
-                        <View className="flex-row items-center">
-                            <View className="bg-green-50 p-3 rounded-full">
-                                <Ionicons name="bicycle" size={24} color={Colors.primary} />
-                            </View>
-                            <View className="ml-4">
-                                <Text className="text-gray-500 text-xs font-bold uppercase">Assigned Rider</Text>
-                                <Text className="text-slate-900 font-bold text-lg">{order.rider_name || "GloLink Rider"}</Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity
-                            activeOpacity={0.7}
-                            onPress={() => Linking.openURL(`tel:${order.rider_phone}`)}
-                            className="bg-primary p-3 rounded-2xl"
-                        >
-                            <Ionicons name="call" size={20} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 {/* Shipping Info */}
                 <View className="bg-white p-5 rounded-3xl mb-4 border border-gray-100">
@@ -159,6 +138,44 @@ export default function OrderDetailScreen() {
                         <Text className="text-blue-700 font-bold ml-2">{order.shipping_address_json?.phone}</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Customer Info — visible only to seller */}
+                {isSeller && (
+                    <View className="bg-white p-5 rounded-3xl mb-4 border border-gray-100">
+                        <View className="flex-row items-center mb-3">
+                            <Ionicons name="person" size={20} color={Colors.primary} />
+                            <Text className="font-bold text-slate-900 ml-2 text-lg">Customer Info</Text>
+                        </View>
+                        <Text className="text-slate-900 text-base font-medium mb-1">{order.buyer_name || order.shipping_address_json?.full_name || 'N/A'}</Text>
+                        <Text className="text-gray-500 mb-1">{order.buyer_email}</Text>
+                        <Text className="text-gray-500">{order.buyer_phone}</Text>
+                    </View>
+                )}
+
+                {/* Shop Info — visible only to buyer */}
+                {isBuyer && (
+                    <View className="bg-white p-5 rounded-3xl mb-4 border border-gray-100">
+                        <View className="flex-row items-center mb-3">
+                            <View className="w-8 h-8 rounded-full bg-primary-container items-center justify-center mr-2">
+                                <Text className="text-sm">{'🏪'}</Text>
+                            </View>
+                            <View>
+                                <Text className="font-bold text-slate-900 text-lg">{order.shop_name || 'Store'}</Text>
+                                <Text className="text-gray-500 text-xs">Sold by</Text>
+                            </View>
+                        </View>
+                        {order.seller_phone && (
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => Linking.openURL(`tel:${order.seller_phone}`)}
+                                className="flex-row items-center bg-gray-50 p-3 rounded-xl"
+                            >
+                                <Ionicons name="call" size={18} color="#2563EB" />
+                                <Text className="text-blue-700 font-bold ml-2">Contact Seller — {order.seller_phone}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
 
                 {/* Items */}
                 <Text className="font-bold text-slate-900 text-lg mb-3 ml-1">Products</Text>

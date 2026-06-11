@@ -8,14 +8,16 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Dimensions, FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { addToCart } = useCart();
-  const { isSignedIn } = useAuth(); // Get auth state
+  const { isSignedIn } = useAuth();
 
   const [product, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,11 +35,11 @@ export default function ProductDetailScreen() {
     // Guest Mode Check
     if (!isSignedIn) {
       Alert.alert(
-        "Login Required",
-        "Please login to add items to your cart and start shopping!",
+        t('login_required'),
+        t('login_cart_msg'),
         [
-          { text: "Later", style: "cancel" },
-          { text: "Login", onPress: () => router.push("/(auth)/login") }
+          { text: t('later'), style: "cancel" },
+          { text: t('login'), onPress: () => router.push("/(auth)/login") }
         ]
       );
       return;
@@ -47,24 +49,23 @@ export default function ProductDetailScreen() {
     try {
       await addToCart(product.id, quantity);
 
-      // Fly-to-Cart Logic
       Alert.alert(
-        "Added to Cart! 🛒",
-        `${product.name} is ready for checkout.`,
+        t('added_to_cart'),
+        t('add_cart_success', { name: product.name }),
         [
           {
-            text: "Keep Browsing",
+            text: t('keep_browsing'),
             style: "cancel"
           },
           {
-            text: "View Cart",
+            text: t('view_cart'),
             onPress: () => router.push("/cart"),
             style: "default"
           }
         ]
       );
     } catch (error) {
-      Alert.alert("Error", "Could not add to cart. Please try again.");
+      Alert.alert(t('error'), t('add_cart_failed'));
     } finally {
       setAddingToCart(false);
     }
@@ -121,13 +122,13 @@ export default function ProductDetailScreen() {
           <View className="flex-row items-center justify-between mb-3">
             <View className="flex-row items-center">
               <Ionicons name="storefront" size={16} color="#6B7280" />
-              <Text className="text-gray-500 font-medium ml-2">{product.store?.name || "Official Store"}</Text>
+              <Text className="text-gray-500 font-medium ml-2">{product.store?.name || t('official_store')}</Text>
             </View>
 
             {/* Location Badge */}
             <View className="flex-row items-center mt-1 mb-2">
               <Ionicons name="location" size={12} color="#9CA3AF" />
-              <Text className="text-gray-500 text-xs ml-1">Ships from {product.store?.location || "Nigeria"}</Text>
+              <Text className="text-gray-500 text-xs ml-1">{t('ships_from')} {product.store?.location || t('nigeria')}</Text>
             </View>
 
             {/* Chat Button (Only shows if seller info exists) */}
@@ -136,9 +137,9 @@ export default function ProductDetailScreen() {
                 activeOpacity={0.7}
                 onPress={async () => {
                   if (!isSignedIn) {
-                    Alert.alert("Login Required", "Please login to chat with sellers.", [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Login", onPress: () => router.push("/(auth)/login") }
+                    Alert.alert(t('login_required'), t('login_cart_msg'), [
+                      { text: t('cancel'), style: "cancel" },
+                      { text: t('login'), onPress: () => router.push("/(auth)/login") }
                     ]);
                     return;
                   }
@@ -146,7 +147,7 @@ export default function ProductDetailScreen() {
                   const sellerId = product.seller_id || product.store?.owner_id || product.store?.user_id;
 
                   if (!sellerId) {
-                    Alert.alert("Error", "Seller information is missing.");
+                    Alert.alert(t('error'), "Seller information is missing.");
                     return;
                   }
 
@@ -158,7 +159,7 @@ export default function ProductDetailScreen() {
                 className="bg-blue-50 px-3 py-1.5 rounded-full flex-row items-center"
               >
                 <Ionicons name="chatbubble-ellipses" size={16} color="#3B82F6" />
-                <Text className="text-blue-600 font-bold text-xs ml-1">Chat</Text>
+                <Text className="text-blue-600 font-bold text-xs ml-1">{t('chat')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -172,7 +173,7 @@ export default function ProductDetailScreen() {
           {/* Related Video */}
           {product.video_url && (
             <View className="mb-6">
-              <Text className="text-slate-900 font-bold text-lg mb-3">Product Video</Text>
+              <Text className="text-slate-900 font-bold text-lg mb-3">{t('product_video')}</Text>
                 <TouchableOpacity
                   onPress={() => router.push('/(tabs)/live')}
                   activeOpacity={0.7}
@@ -189,7 +190,7 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          <Text className="text-gray-900 font-bold text-lg mb-2">Description</Text>
+          <Text className="text-gray-900 font-bold text-lg mb-2">{t('description')}</Text>
           <Text className="text-gray-500 leading-6 text-base">{product.description}</Text>
         </View>
       </ScrollView>
@@ -217,7 +218,7 @@ export default function ProductDetailScreen() {
           {/* Add Button */}
           <View className="flex-1">
             <Button
-              title="Add to Cart"
+              title={t('add_to_cart')}
               onPress={handleAddToCart}
               loading={addingToCart}
               icon={<Ionicons name="cart" size={20} color="white" />}

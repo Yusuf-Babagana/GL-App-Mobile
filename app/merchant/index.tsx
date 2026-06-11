@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert, Linking, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { marketAPI } from '@/lib/marketApi';
@@ -248,7 +248,7 @@ export default function MerchantStudioDashboard() {
             {orders.slice(0, 5).map((order: any) => (
               <TouchableOpacity
                 key={order.id}
-                onPress={() => router.push(`/orders/${order.id}`)}
+                onPress={() => router.push(`/orders/${order.id}?role=seller`)}
                 activeOpacity={0.7}
                 className="bg-white p-5 rounded-3xl border border-slate-100"
               >
@@ -261,9 +261,17 @@ export default function MerchantStudioDashboard() {
                   </View>
                 </View>
                 <View className="flex-row justify-between items-end border-t border-slate-100 pt-3">
-                  <View>
+                  <View className="flex-1 mr-2">
                     <Text className="text-gray-500 text-[10px] font-black uppercase mb-1">Customer</Text>
-                    <Text className="text-slate-900 font-bold text-sm">{order.shipping_address_json?.full_name || 'Guest'}</Text>
+                    <Text className="text-slate-900 font-bold text-sm">{order.buyer_name || 'Guest'}</Text>
+                    {order.buyer_phone && (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(`tel:${order.buyer_phone}`)}
+                        className="flex-row items-center mt-1"
+                      >
+                        <Text className="text-blue-700 text-xs font-medium">{order.buyer_phone}</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   <View className="items-end">
                     <Text className="text-gray-500 text-[10px] font-black uppercase mb-1">Total</Text>

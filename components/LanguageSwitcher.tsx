@@ -1,54 +1,41 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { I18nManager, Text, TouchableOpacity, View } from 'react-native';
 
-export default function LanguageSwitcher() {
+interface Props {
+    variant?: 'light' | 'dark';
+}
+
+export default function LanguageSwitcher({ variant = 'light' }: Props) {
     const { i18n, t } = useTranslation();
 
     const changeLanguage = (lang: string) => {
         i18n.changeLanguage(lang);
+        const isRtl = lang === 'ar';
+        if (I18nManager.isRTL !== isRtl) {
+            I18nManager.allowRTL(isRtl);
+            I18nManager.forceRTL(isRtl);
+        }
     };
 
     const currentLang = i18n.language;
+    const activeStyle = variant === 'dark' ? 'text-green-900' : 'text-white';
+    const inactiveStyle = variant === 'dark' ? 'text-gray-400' : 'text-white/50';
+    const pipeStyle = variant === 'dark' ? 'text-gray-300' : 'text-white/30';
 
     return (
-        <View className="my-4">
-            <Text className="text-gray-500 mb-2 font-bold ml-1 uppercase text-xs">
-                {t('select_language')}
-            </Text>
-            <View className="flex-row gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-
-                {/* English */}
-                <TouchableOpacity
-                    onPress={() => changeLanguage('en')}
-                    className={`flex-1 py-3 rounded-lg items-center ${currentLang === 'en' ? 'bg-[#1DB954]' : 'bg-transparent'}`}
-                >
-                    <Text className={`font-bold ${currentLang === 'en' ? 'text-white' : 'text-gray-600'}`}>
-                        English
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Hausa */}
-                <TouchableOpacity
-                    onPress={() => changeLanguage('ha')}
-                    className={`flex-1 py-3 rounded-lg items-center ${currentLang === 'ha' ? 'bg-[#1DB954]' : 'bg-transparent'}`}
-                >
-                    <Text className={`font-bold ${currentLang === 'ha' ? 'text-white' : 'text-gray-600'}`}>
-                        Hausa
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Arabic */}
-                <TouchableOpacity
-                    onPress={() => changeLanguage('ar')}
-                    className={`flex-1 py-3 rounded-lg items-center ${currentLang === 'ar' ? 'bg-[#1DB954]' : 'bg-transparent'}`}
-                >
-                    <Text className={`font-bold ${currentLang === 'ar' ? 'text-white' : 'text-gray-600'}`}>
-                        العربية
-                    </Text>
-                </TouchableOpacity>
-
-            </View>
+        <View className="flex-row items-center justify-start">
+            <TouchableOpacity onPress={() => changeLanguage('en')} activeOpacity={0.6} className="px-3 py-2">
+                <Text className={`text-xs font-bold ${currentLang === 'en' ? activeStyle : inactiveStyle}`}>EN</Text>
+            </TouchableOpacity>
+            <Text className={`${pipeStyle} text-xs`}>|</Text>
+            <TouchableOpacity onPress={() => changeLanguage('ha')} activeOpacity={0.6} className="px-3 py-2">
+                <Text className={`text-xs font-bold ${currentLang === 'ha' ? activeStyle : inactiveStyle}`}>HA</Text>
+            </TouchableOpacity>
+            <Text className={`${pipeStyle} text-xs`}>|</Text>
+            <TouchableOpacity onPress={() => changeLanguage('ar')} activeOpacity={0.6} className="px-3 py-2">
+                <Text className={`text-xs font-bold ${currentLang === 'ar' ? activeStyle : inactiveStyle}`}>AR</Text>
+            </TouchableOpacity>
         </View>
     );
 }

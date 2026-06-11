@@ -49,8 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getRedirectPath = (role: string | null) => {
         switch (role) {
             case 'seller': return "/merchant";
-            case 'delivery_partner': return "/rider/dashboard"; // Driver -> Rider Dashboard
-            case 'rider': return "/rider/dashboard";
             case 'job_seeker': return "/(jobs)/dashboard";
             default: return "/(tabs)";
         }
@@ -216,8 +214,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         router.replace("/admin/dashboard");
                     } else if (role === 'seller') {
                         router.replace("/merchant/dashboard");
-                    } else if (role === 'rider' || role === 'delivery_partner') {
-                        router.replace("/rider/dashboard");
                     } else {
                         router.replace("/(tabs)");
                     }
@@ -231,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 // 3. GUEST PROTECTION
-                const protectedRoutes = ['seller', 'rider', 'wallet', 'kyc', 'admin'];
+                const protectedRoutes = ['seller', 'wallet', 'kyc', 'admin'];
                 if (protectedRoutes.includes(rootSegment)) {
                     router.replace("/(auth)/login");
                 } else if (rootSegment === '(tabs)' && segments[1] === 'cart') {

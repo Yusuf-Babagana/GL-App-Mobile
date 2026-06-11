@@ -4,8 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from 'react-i18next';
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
   const { isSignedIn } = useAuth();
   const { cartCount } = useCart();
   const insets = useSafeAreaInsets();
@@ -58,7 +60,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Products",
+          title: t('products'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "grid" : "grid-outline"} size={22} color={color} />
@@ -69,7 +71,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="live"
         options={{
-          title: "Ads",
+          title: t('ads'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={24} color={color} />
@@ -80,7 +82,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="markets"
         options={{
-          title: "Market",
+          title: t('market'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "cart" : "cart-outline"} size={22} color={color} />
@@ -91,7 +93,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="data"
         options={{
-          title: "Data",
+          title: t('data_tab'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "wifi" : "wifi-outline"} size={24} color={color} />
@@ -102,7 +104,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Chats",
+          title: t('chats'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={22} color={color} />
@@ -113,7 +115,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: "Cart",
+          title: t('cart_tab'),
           tabBarBadge: cartCount > 0 ? cartCount : undefined,
           tabBarBadgeStyle: { backgroundColor: '#EF4444', color: 'white', fontSize: 10, fontWeight: 'bold', minWidth: 18, height: 18, lineHeight: 18 },
           tabBarIcon: ({ color, focused }) => (
@@ -126,7 +128,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: "More",
+          title: t('more'),
           tabBarIcon: ({ color, focused }) => (
             <View className={`${focused ? 'bg-green-100' : ''} p-1.5 rounded-full`}>
               <Ionicons name={focused ? "ellipsis-horizontal" : "ellipsis-horizontal-outline"} size={24} color={color} />

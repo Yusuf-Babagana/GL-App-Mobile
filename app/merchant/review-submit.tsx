@@ -70,12 +70,15 @@ export default function ReviewSubmit() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (res.data.status === 'success') {
-        // ✅ THE FIX: Toggle the global safety flag on the context layout tree instantly
-        setIsSubmitted(true);
+      if (res.data.status === 'exists') {
+        router.replace('/merchant');
+        return;
+      }
 
+      if (res.data.status === 'success') {
+        setIsSubmitted(true);
         Alert.alert("Success 🎉", "Your application has been received! Access will open once the administrator activates your profile.", [
-          { text: "Got It", onPress: () => router.replace('/merchant') } // Routes back to safety holding view
+          { text: "Got It", onPress: () => router.replace('/merchant') }
         ]);
       }
     } catch (error: any) {

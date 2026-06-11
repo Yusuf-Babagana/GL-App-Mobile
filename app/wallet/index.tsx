@@ -9,10 +9,12 @@ import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, Copy, Eye, EyeOff, History, Landmark, Plus, RefreshCcw } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import * as ExpoClipboard from 'expo-clipboard';
 import SafeScreen from '../../components/SafeScreen';
 
 export default function WalletScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -55,7 +57,7 @@ export default function WalletScreen() {
         if (!text) return;
         await ExpoClipboard.setStringAsync(text);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Copied", "Account number copied to clipboard.");
+        Alert.alert(t('copied'), t('copied_clipboard'));
     };
 
     if (loading) {
@@ -63,7 +65,7 @@ export default function WalletScreen() {
             <SafeScreen bg="bg-white">
                 <View className="flex-1 items-center justify-center">
                     <ActivityIndicator size="large" color="#4ADE80" />
-                    <Text className="text-gray-400 mt-4 font-bold">Securing your wallet...</Text>
+                    <Text className="text-gray-400 mt-4 font-bold">{t('securing_wallet')}</Text>
                 </View>
             </SafeScreen>
         );
@@ -88,7 +90,7 @@ export default function WalletScreen() {
                 >
                     <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
-                <Text className="text-lg font-black text-slate-900 tracking-tight">GL-Wallet</Text>
+                <Text className="text-lg font-black text-slate-900 tracking-tight">{t('gl_wallet')}</Text>
                 <TouchableOpacity
                     activeOpacity={0.7}
                     onRefresh={onRefresh}
@@ -114,7 +116,7 @@ export default function WalletScreen() {
                         <View className="flex-row justify-between items-center mb-6">
                             <View className="flex-row items-center bg-green-900/10 px-3 py-1.5 rounded-full border border-green-900/10">
                                 <View className="w-1.5 h-1.5 bg-green-700 rounded-full mr-2" />
-                                <Text className="text-green-900/80 text-[10px] font-bold uppercase tracking-widest">Active Wallet</Text>
+                                <Text className="text-green-900/80 text-[10px] font-bold uppercase tracking-widest">{t('active_wallet')}</Text>
                             </View>
                             <TouchableOpacity activeOpacity={0.7} onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -126,24 +128,24 @@ export default function WalletScreen() {
 
                         <View className="flex-row gap-4 mb-6">
                             <View className="flex-1 bg-green-900/5 p-4 rounded-3xl border border-green-900/10">
-                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">Withdrawable Balance</Text>
+                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">{t('withdrawable_balance')}</Text>
                                 <Text className="text-green-950 text-2xl font-black tracking-tight">
                                     {showBalance ? `₦${Number(wallet.balance).toLocaleString()}` : '••••••'}
                                 </Text>
                             </View>
                             <View className="flex-1 bg-green-900/5 p-4 rounded-3xl border border-green-900/10">
-                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">In-Transit Balance</Text>
+                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">{t('in_transit_balance')}</Text>
                                 <Text className="text-green-950 text-2xl font-black tracking-tight">
                                     {showBalance ? `₦${Number(wallet.locked_balance ?? 0).toLocaleString()}` : '••••••'}
                                 </Text>
-                                <Text className="text-green-900/40 text-[8px] font-bold uppercase mt-1">Pending Settlement</Text>
+                                <Text className="text-green-900/40 text-[8px] font-bold uppercase mt-1">{t('pending_settlement')}</Text>
                             </View>
                         </View>
 
                         <View className="flex-row items-center justify-between">
                             <View>
-                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">Currency</Text>
-                                <Text className="text-green-950/90 font-bold text-sm">NGN • Nigerian Naira</Text>
+                                <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">{t('currency')}</Text>
+                                <Text className="text-green-950/90 font-bold text-sm">{t('ngn_naira')}</Text>
                             </View>
                         </View>
                     </LinearGradient>
@@ -152,9 +154,9 @@ export default function WalletScreen() {
                 {/* Quick Action Grid */}
                 <View className="flex-row justify-between mb-8">
                     {[
-                        { label: 'Top Up', icon: <Plus size={24} color="#4ADE80" />, bg: 'bg-green-50', route: '/wallet/deposit' },
-                        { label: 'Withdraw', icon: <Landmark size={24} color="#1F2937" />, bg: 'bg-gray-100', route: '/wallet/withdraw' },
-                        { label: 'History', icon: <History size={24} color="#1F2937" />, bg: 'bg-gray-100', route: () => Alert.alert("Statement", "Statement generator is active in the log below.") }
+                        { label: t('top_up'), icon: <Plus size={24} color="#4ADE80" />, bg: 'bg-green-50', route: '/wallet/deposit' },
+                        { label: t('withdraw'), icon: <Landmark size={24} color="#1F2937" />, bg: 'bg-gray-100', route: '/wallet/withdraw' },
+                        { label: t('history'), icon: <History size={24} color="#1F2937" />, bg: 'bg-gray-100', route: () => Alert.alert(t('statement') || "Statement", "Statement generator is active in the log below.") }
                     ].map((action, i) => (
                         <TouchableOpacity
                             key={i}
@@ -175,7 +177,7 @@ export default function WalletScreen() {
 
                 {/* Funding Account Detail */}
                 <View className="mb-8 bg-white p-6 rounded-[35px] border border-gray-100">
-                    <Text className="text-slate-900 font-black text-sm mb-4 uppercase tracking-widest text-center">Your Funding Account</Text>
+                    <Text className="text-slate-900 font-black text-sm mb-4 uppercase tracking-widest text-center">{t('your_funding_account')}</Text>
                     
                     <View className="bg-gray-50 p-5 rounded-3xl items-center">
                         <Text className="text-[10px] text-gray-500 font-bold uppercase mb-1">{wallet.bank_name}</Text>
@@ -192,13 +194,13 @@ export default function WalletScreen() {
                             </TouchableOpacity>
                         </View>
                         <Text className="mt-3 text-[10px] text-center text-gray-500 font-medium px-4">
-                            Funds transferred to this account arrive in your wallet instantly.
+                            {t('funds_arrive_instantly')}
                         </Text>
 
                         {/* Fee Notice */}
                         <View className="mt-4 p-3 bg-amber-50 rounded-2xl border border-amber-100 w-full">
                             <Text className="text-[10px] text-amber-700 text-center font-bold">
-                                A small service fee of 1.5% (max ₦50) is deducted by the bank on deposits.
+                                {t('service_fee')}
                             </Text>
                         </View>
                     </View>
@@ -206,9 +208,9 @@ export default function WalletScreen() {
 
                 {/* Transaction History */}
                 <View className="mb-4 flex-row justify-between items-center">
-                    <Text className="text-lg font-black text-slate-900">Recent Activity</Text>
+                    <Text className="text-lg font-black text-slate-900">{t('recent_activity')}</Text>
                     <TouchableOpacity activeOpacity={0.7}>
-                        <Text className="text-green-600 font-bold text-xs">See All</Text>
+                        <Text className="text-green-600 font-bold text-xs">{t('see_all')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -223,10 +225,10 @@ export default function WalletScreen() {
                                     </View>
                                     <View>
                                         <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
-                                            {txn.description || (isIncome ? 'Deposit' : 'Withdrawal')}
+                                            {txn.description || (isIncome ? t('deposit') : t('withdrawal'))}
                                         </Text>
                                         <Text className="text-gray-500 text-[10px] font-medium">
-                                            {new Date(txn.created_at).toLocaleDateString()} • {txn.status || 'Success'}
+                                            {new Date(txn.created_at).toLocaleDateString()} • {txn.status || t('success_status')}
                                         </Text>
                                     </View>
                                 </View>
@@ -241,8 +243,8 @@ export default function WalletScreen() {
                         <View className="bg-white p-4 rounded-full mb-4 border border-gray-100">
                             <History size={32} color="#CBD5E1" />
                         </View>
-                        <Text className="text-gray-500 font-bold text-sm">No recent activity found</Text>
-                        <Text className="text-gray-400 text-[10px] mt-1">Your transactions will appear here</Text>
+                        <Text className="text-gray-500 font-bold text-sm">{t('no_recent_activity')}</Text>
+                        <Text className="text-gray-400 text-[10px] mt-1">{t('transactions_here')}</Text>
                     </View>
                 )}
             </ScrollView>

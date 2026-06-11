@@ -4,8 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Linking, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 
 export default function HelpSupportScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
 
     const ContactMethod = ({ icon, title, subtitle, onPress, color }: any) => (
@@ -51,58 +53,58 @@ export default function HelpSupportScreen() {
                 <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 -ml-2 rounded-full active:bg-gray-50">
                     <Ionicons name="arrow-back" size={24} color="#1E293B" />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold text-gray-900">Help & Support</Text>
+                <Text className="text-xl font-bold text-gray-900">{t('help_support')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
 
                 {/* Contact Section */}
-                <Text className="text-gray-900 font-bold text-lg mb-4">Contact Us</Text>
+                <Text className="text-gray-900 font-bold text-lg mb-4">{t('contact_us')}</Text>
                 <ContactMethod
                     icon="mail-outline"
-                    title="Email Support"
-                    subtitle="support@globalink.com"
-                    onPress={() => Linking.openURL('mailto:support@globalink.com')}
+                    title={t('email_support')}
+                    subtitle="globalinkmarketplace@gmail.com"
+                    onPress={() => Linking.openURL('mailto:globalinkmarketplace@gmail.com')}
                     color="#6366F1"
                 />
                 <ContactMethod
                     icon="logo-whatsapp"
-                    title="WhatsApp"
-                    subtitle="Chat with our support team"
-                    onPress={() => Linking.openURL('https://wa.me/2348000000000')}
+                    title={t('whatsapp')}
+                    subtitle={t('whatsapp_desc')}
+                    onPress={() => Linking.openURL('https://wa.me/2348101293037')}
                     color="#22C55E"
                 />
                 <ContactMethod
                     icon="call-outline"
-                    title="Call Us"
-                    subtitle="+234 800 000 0000"
-                    onPress={() => Linking.openURL('tel:+2348000000000')}
+                    title={t('call_us')}
+                    subtitle="+234 810 129 3037"
+                    onPress={() => Linking.openURL('tel:+2348101293037')}
                     color="#3B82F6"
                 />
 
                 {/* FAQ Section */}
-                <Text className="text-gray-900 font-bold text-lg mb-4 mt-8">Frequently Asked Questions</Text>
+                <Text className="text-gray-900 font-bold text-lg mb-4 mt-8">{t('faq')}</Text>
                 <FAQItem
-                    question="How do I track my order?"
-                    answer="You can track your order by navigating to the 'My Orders' section in your account. Select an active order to view its current status and tracking details."
+                    question={t('faq_track_order')}
+                    answer={t('faq_track_order_ans')}
                 />
                 <FAQItem
-                    question="How do I reset my password?"
-                    answer="Go to the login screen and tap on 'Forgot Password?'. Follow the instructions sent to your email to reset your password."
+                    question={t('faq_reset_password')}
+                    answer={t('faq_reset_password_ans')}
                 />
                 <FAQItem
-                    question="Can I change my delivery address?"
-                    answer="Yes, you can change your delivery address before the order is dispatched. Go to 'My Orders', select the order, and look for the 'Edit Address' option if available, or contact support immediately."
+                    question={t('faq_change_address')}
+                    answer={t('faq_change_address_ans')}
                 />
                 <FAQItem
-                    question="What payment methods are accepted?"
-                    answer="We accept various payment methods including credit/debit cards, bank transfers, and mobile money. You can manage your payment methods in 'My Wallet'."
+                    question={t('faq_payment_methods')}
+                    answer={t('faq_payment_methods_ans')}
                 />
 
                 {/* Report Issue Button */}
                 <View className="mt-8">
                     <Button
-                        title="Report an Issue"
+                        title={t('report_issue')}
                         onPress={() => router.push("/help/report-issue" as any)} // Assuming this route might exist or can be a placeholder
                         variant="secondary"
                         icon={<Ionicons name="bug-outline" size={20} color="#1F2937" />}

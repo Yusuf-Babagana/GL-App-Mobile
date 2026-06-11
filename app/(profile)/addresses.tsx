@@ -7,8 +7,10 @@ import { Address } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from 'react-i18next';
 
 function AddressesScreen() {
+  const { t } = useTranslation();
   const {
     addAddress,
     addresses,
@@ -64,9 +66,9 @@ function AddressesScreen() {
   };
 
   const handleDeleteAddress = (addressId: string, label: string) => {
-    Alert.alert("Delete Address", `Are you sure you want to delete ${label}`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteAddress(addressId) },
+    Alert.alert(t('delete_address'), `${t('delete_address_confirm')} ${label}`, [
+      { text: t('cancel'), style: "cancel" },
+      { text: t('delete'), style: "destructive", onPress: () => deleteAddress(addressId) },
     ]);
   };
 
@@ -80,7 +82,7 @@ function AddressesScreen() {
       !addressForm.zipCode ||
       !addressForm.phoneNumber
     ) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert(t('error'), t('fill_required'));
       return;
     }
 
@@ -95,10 +97,10 @@ function AddressesScreen() {
           onSuccess: () => {
             setShowAddressForm(false);
             setEditingAddressId(null);
-            Alert.alert("Success", "Address updated successfully");
+            Alert.alert(t('success'), t('address_updated'));
           },
           onError: (error: any) => {
-            Alert.alert("Error", error?.response?.data?.error || "Failed to update address");
+            Alert.alert(t('error'), error?.response?.data?.error || t('failed_update_address'));
           },
         }
       );
@@ -107,10 +109,10 @@ function AddressesScreen() {
       addAddress(addressForm, {
         onSuccess: () => {
           setShowAddressForm(false);
-          Alert.alert("Success", "Address added successfully");
+          Alert.alert(t('success'), t('address_added'));
         },
         onError: (error: any) => {
-          Alert.alert("Error", error?.response?.data?.error || "Failed to add address");
+          Alert.alert(t('error'), error?.response?.data?.error || t('failed_add_address'));
         },
       });
     }
@@ -131,16 +133,16 @@ function AddressesScreen() {
       {addresses.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Ionicons name="location-outline" size={80} color="#666" />
-          <Text className="text-text-primary font-semibold text-xl mt-4">No addresses yet</Text>
+          <Text className="text-text-primary font-semibold text-xl mt-4">{t('no_addresses')}</Text>
           <Text className="text-text-secondary text-center mt-2">
-            Add your first delivery address
+            {t('add_first_address')}
           </Text>
           <TouchableOpacity
             className="bg-primary rounded-2xl px-8 py-4 mt-6"
             activeOpacity={0.8}
             onPress={handleAddAddress}
           >
-            <Text className="text-background font-bold text-base">Add Address</Text>
+            <Text className="text-background font-bold text-base">{t('add_address')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -168,7 +170,7 @@ function AddressesScreen() {
             >
               <View className="flex-row items-center">
                 <Ionicons name="add-circle-outline" size={24} color="#121212" />
-                <Text className="text-background font-bold text-base ml-2">Add New Address</Text>
+                <Text className="text-background font-bold text-base ml-2">{t('add_new_address')}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -191,16 +193,17 @@ function AddressesScreen() {
 export default AddressesScreen;
 
 function ErrorUI() {
+  const { t } = useTranslation();
   return (
     <SafeScreen>
       <AddressesHeader />
       <View className="flex-1 items-center justify-center px-6">
         <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
         <Text className="text-text-primary font-semibold text-xl mt-4">
-          Failed to load addresses
+          {t('failed_load_addresses')}
         </Text>
         <Text className="text-text-secondary text-center mt-2">
-          Please check your connection and try again
+          {t('check_connection')}
         </Text>
       </View>
     </SafeScreen>
@@ -208,12 +211,13 @@ function ErrorUI() {
 }
 
 function LoadingUI() {
+  const { t } = useTranslation();
   return (
     <SafeScreen>
       <AddressesHeader />
       <View className="flex-1 items-center justify-center px-6">
         <ActivityIndicator size="large" color="#00D9FF" />
-        <Text className="text-text-secondary mt-4">Loading addresses...</Text>
+        <Text className="text-text-secondary mt-4">{t('loading_addresses')}</Text>
       </View>
     </SafeScreen>
   );

@@ -5,10 +5,10 @@ import { useCart } from '@/context/CartContext';
 import { useWallet } from '@/context/WalletContext';
 import { marketAPI } from '@/lib/marketApi';
 import { Ionicons } from '@expo/vector-icons';
-
-const WALLET_PAY_API = '/market/orders/wallet-pay/';
+import { useTranslation } from 'react-i18next';
 
 export default function CheckoutScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { cartItems, cartTotal, refreshCart } = useCart();
   const { balance, refreshWallet } = useWallet();
@@ -25,11 +25,11 @@ export default function CheckoutScreen() {
 
   const handlePayWithWallet = async () => {
     if (!address.trim() || !city.trim() || !phone.trim()) {
-      Alert.alert('Missing Info', 'Please enter your delivery address, city, and phone number.');
+      Alert.alert(t('missing_info'), t('missing_info_msg'));
       return;
     }
     if (!pin || pin.length !== 4) {
-      Alert.alert('Invalid PIN', 'Please enter your 4-digit transaction PIN.');
+      Alert.alert(t('invalid_pin'), t('invalid_pin_msg'));
       return;
     }
 
@@ -41,21 +41,18 @@ export default function CheckoutScreen() {
         quantity: item.quantity,
       }));
 
-      const orderRes = await marketAPI.placeOrder(
-        { address: address.trim(), city: city.trim(), phone: phone.trim() },
+      await marketAPI.checkout({
         items,
+        shipping_address: { address: address.trim(), city: city.trim(), phone: phone.trim() },
+        payment_method: 'wallet',
         pin,
-      );
-
-      const orderId = orderRes.order_id || orderRes.id;
-
-      await marketAPI.post(WALLET_PAY_API, { order_id: orderId });
+      });
 
       await refreshCart();
       await refreshWallet();
 
-      Alert.alert('Payment Successful 🎉', 'Your order has been placed successfully!', [
-        { text: 'View Orders', onPress: () => router.replace('/orders') },
+      Alert.alert(t('payment_successful'), t('order_placed'), [
+        { text: t('view_orders'), onPress: () => router.replace('/orders') },
       ]);
     } catch (error: any) {
       const data = error?.response?.data ?? error;
@@ -71,7 +68,7 @@ export default function CheckoutScreen() {
 
       if (isStockIssue) {
         Alert.alert(
-          'Stock Discrepancy 📦',
+          t('stock_discrepancy'),
           data?.message ||
             data?.error ||
             'Requested quantity exceeds available stock limit.',
@@ -83,8 +80,8 @@ export default function CheckoutScreen() {
           data?.detail ||
           error?.error ||
           error?.message ||
-          'Transaction failed. Please try again.';
-        Alert.alert('Payment Failed', msg);
+          t('transaction_failed');
+        Alert.alert(t('payment_failed'), msg);
       }
     } finally {
       setSubmitting(false);
@@ -99,7 +96,7 @@ export default function CheckoutScreen() {
       {submitting && (
         <View className="absolute inset-0 z-50 bg-white/80 items-center justify-center">
           <ActivityIndicator size="large" color="#16A34A" />
-          <Text className="text-gray-500 font-bold text-xs mt-3">Processing your payment...</Text>
+          <Text className="text-gray-500 font-bold text-xs mt-3">{t('processing_payment')}</Text>
         </View>
       )}
 
@@ -107,11 +104,11 @@ export default function CheckoutScreen() {
         <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mr-4">
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
-        <Text className="text-xl font-black text-slate-900">Checkout</Text>
+        <Text className="text-xl font-black text-slate-900">{t('checkout')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <Text className="text-slate-900 text-lg font-black mb-4">Order Summary</Text>
+        <Text className="text-slate-900 text-lg font-black mb-4">{t('order_summary')}</Text>
 
         <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
           {cartItems.map((item) => (
@@ -121,7 +118,7 @@ export default function CheckoutScreen() {
                   {item.product_name}
                 </Text>
                 <Text className="text-gray-500 text-xs font-semibold mt-0.5">
-                  Qty: {item.quantity} × ₦{Number(item.product_price).toLocaleString()}
+                  {t('qty')}: {item.quantity} × ₦{Number(item.product_price).toLocaleString()}
                 </Text>
               </View>
               <Text className="text-slate-900 font-black">
@@ -133,18 +130,18 @@ export default function CheckoutScreen() {
           <View className="h-px bg-gray-100 my-3" />
 
           <View className="flex-row justify-between items-center">
-            <Text className="text-slate-900 font-black text-lg">Order Total</Text>
+            <Text className="text-slate-900 font-black text-lg">{t('order_total')}</Text>
             <Text className="text-primary font-black text-2xl">₦{orderTotal.toLocaleString()}</Text>
           </View>
         </View>
 
-        <Text className="text-slate-900 text-lg font-black mb-3">Delivery Details</Text>
+        <Text className="text-slate-900 text-lg font-black mb-3">{t('delivery_details')}</Text>
 
         <View className="mb-5">
-          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Address</Text>
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">{t('address')}</Text>
           <TextInput
             className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
-            placeholder="No. 123, Street Name"
+            placeholder={t('address_placeholder')}
             placeholderTextColor="#94A3B8"
             value={address}
             onChangeText={setAddress}
@@ -153,10 +150,10 @@ export default function CheckoutScreen() {
         </View>
 
         <View className="mb-5">
-          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">City / Local Area</Text>
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">{t('city')}</Text>
           <TextInput
             className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
-            placeholder="Your city"
+            placeholder={t('city_placeholder')}
             placeholderTextColor="#94A3B8"
             value={city}
             onChangeText={setCity}
@@ -165,10 +162,10 @@ export default function CheckoutScreen() {
         </View>
 
         <View className="mb-8">
-          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">Phone Number</Text>
+          <Text className="text-gray-500 text-xs font-bold mb-1 ml-1 uppercase">{t('phone_number')}</Text>
           <TextInput
             className="bg-white border border-gray-200 p-4 rounded-2xl text-slate-900 font-semibold"
-            placeholder="080..."
+            placeholder={t('phone_placeholder')}
             placeholderTextColor="#94A3B8"
             keyboardType="phone-pad"
             value={phone}
@@ -177,7 +174,7 @@ export default function CheckoutScreen() {
           />
         </View>
 
-        <Text className="text-slate-900 text-lg font-black mb-3">Payment Method</Text>
+        <Text className="text-slate-900 text-lg font-black mb-3">{t('payment_method')}</Text>
 
         <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
           <View className="flex-row items-center mb-4">
@@ -185,51 +182,51 @@ export default function CheckoutScreen() {
               <Ionicons name="wallet" size={24} color="#329629" />
             </View>
             <View className="flex-1">
-              <Text className="text-slate-900 font-bold text-base">GLAPP Wallet</Text>
+              <Text className="text-slate-900 font-bold text-base">{t('glapp_wallet')}</Text>
               <Text className="text-gray-500 text-xs font-semibold">
-                Balance: ₦{walletBalance.toLocaleString()}
+                {t('balance')}: ₦{walletBalance.toLocaleString()}
               </Text>
             </View>
             <View className="bg-primary-container px-3 py-1 rounded-lg">
-              <Text className="text-primary-dark font-black text-xs uppercase">Default</Text>
+              <Text className="text-primary-dark font-black text-xs uppercase">{t('default')}</Text>
             </View>
           </View>
 
           <View className="h-px bg-gray-100 my-1" />
 
           <View className="flex-row justify-between items-center py-3">
-            <Text className="text-gray-500 text-sm font-semibold">Wallet Balance</Text>
+            <Text className="text-gray-500 text-sm font-semibold">{t('wallet_balance')}</Text>
             <Text className="text-slate-900 font-black text-base">₦{walletBalance.toLocaleString()}</Text>
           </View>
           <View className="flex-row justify-between items-center pb-3">
-            <Text className="text-gray-500 text-sm font-semibold">Order Total</Text>
+            <Text className="text-gray-500 text-sm font-semibold">{t('order_total')}</Text>
             <Text className="text-slate-900 font-black text-base">₦{orderTotal.toLocaleString()}</Text>
           </View>
 
           {!sufficient && (
             <View className="bg-red-50 border border-red-100 rounded-2xl p-4 mt-2">
               <Text className="text-red-700 font-bold text-xs">
-                Insufficient Wallet Balance. Please fund your account to continue.
+                {t('insufficient_balance')}
               </Text>
               <Text className="text-red-500 text-xs font-medium mt-1">
-                Shortfall: ₦{shortfall.toLocaleString()}
+                {t('shortfall')}: ₦{shortfall.toLocaleString()}
               </Text>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push('/wallet')}
                 className="bg-red-600 mt-3 py-3 rounded-xl items-center"
               >
-                <Text className="text-white font-bold text-xs">Fund Wallet</Text>
+                <Text className="text-white font-bold text-xs">{t('fund_wallet')}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        <Text className="text-slate-900 text-lg font-black mb-3">Transaction PIN</Text>
+        <Text className="text-slate-900 text-lg font-black mb-3">{t('transaction_pin')}</Text>
 
         <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
           <Text className="text-gray-500 text-xs font-bold mb-2 ml-1 uppercase">
-            Enter 4-Digit Transaction PIN
+            {t('enter_pin')}
           </Text>
           <TextInput
             className="bg-gray-50 border border-gray-200 p-4 rounded-2xl text-slate-900 font-black text-lg tracking-[8px] text-center"
@@ -256,15 +253,15 @@ export default function CheckoutScreen() {
               className={`font-black text-sm ml-2 ${!sufficient ? 'text-gray-400' : 'text-white'}`}
             >
               {submitting
-                ? 'Processing...'
-                : `Pay ₦${orderTotal.toLocaleString()}`}
+                ? t('processing')
+                : `${t('pay')} ₦${orderTotal.toLocaleString()}`}
             </Text>
           </View>
         </TouchableOpacity>
 
         {!sufficient && (
           <Text className="text-gray-500 text-xs font-medium text-center mb-6">
-            Insufficient Wallet Balance. Please fund your account to continue.
+            {t('insufficient_balance')}
           </Text>
         )}
       </ScrollView>

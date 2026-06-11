@@ -138,15 +138,15 @@ export default function OrderTrackingScreen() {
                 region={region}
                 onRegionChangeComplete={setRegion}
             >
-                {/* Rider Marker (Store Location / Driver) */}
+                {/* Store Marker */}
                 {driverLocation && (
                     <Marker
                         coordinate={driverLocation}
-                        title={order?.rider?.user?.first_name || "Rider"}
-                        description={order?.rider ? "Your Rider" : "Store Location"}
+                        title="Store"
+                        description="Store Location"
                     >
                         <View className="bg-primary p-2 rounded-full border-2 border-white shadow-lg">
-                            <Ionicons name="bicycle" size={20} color="white" />
+                            <Ionicons name="storefront" size={20} color="white" />
                         </View>
                     </Marker>
                 )}
@@ -183,33 +183,18 @@ export default function OrderTrackingScreen() {
                     </View>
                 </View>
 
-                {/* Rider Card */}
-                {order?.rider ? (
-                    <View className="flex-row items-center bg-gray-50 p-4 rounded-2xl mb-6 border border-gray-100">
-                        <View className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden items-center justify-center">
-                            <Ionicons name="person" size={24} color="#9CA3AF" />
-                        </View>
-                        <View className="ml-3 flex-1">
-                            <Text className="font-bold text-gray-900 text-lg">
-                                {order.rider.user.first_name} {order.rider.user.last_name}
-                            </Text>
-                            <Text className="text-gray-500 text-xs">Verified Rider • <Text className="text-primary font-bold">5.0 ★</Text></Text>
-                        </View>
-                        <TouchableOpacity className="bg-primary p-3 rounded-full">
-                            <Ionicons name="call" size={20} color="white" />
-                        </TouchableOpacity>
+                {/* Store Info */}
+                <View className="flex-row items-center bg-gray-50 p-4 rounded-2xl mb-6 border border-gray-100">
+                    <View className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden items-center justify-center">
+                        <Ionicons name="storefront" size={24} color="#9CA3AF" />
                     </View>
-                ) : (
-                    <View className="flex-row items-center bg-orange-50 p-4 rounded-2xl mb-6 border border-orange-100">
-                        <View className="w-12 h-12 bg-orange-200 rounded-full items-center justify-center">
-                            <ActivityIndicator color="#ea580c" />
-                        </View>
-                        <View className="ml-3 flex-1">
-                            <Text className="font-bold text-gray-900">Searching for Rider...</Text>
-                            <Text className="text-gray-500 text-xs">We are assigning a rider to your order.</Text>
-                        </View>
+                    <View className="ml-3 flex-1">
+                        <Text className="font-bold text-gray-900 text-lg">
+                            {order?.store?.name || "Store"}
+                        </Text>
+                        <Text className="text-gray-500 text-xs">Order #{orderId}</Text>
                     </View>
-                )}
+                </View>
 
                 {/* Delivery details */}
                 <View>

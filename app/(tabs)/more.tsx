@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Alert, Linking, View, Text, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
-import { Store, Heart, ShoppingBag, MapPin, Grid3X3, Headset, ShoppingCart, User as UserIcon, Wallet, LogOut, Shield, ChevronRight, Lock, Trash2, FileText } from 'lucide-react-native';
+import { Store, Heart, ShoppingBag, MapPin, Grid3X3, Headset, ShoppingCart, User as UserIcon, Wallet, LogOut, Shield, ChevronRight, Lock, Trash2, FileText, Languages } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { marketAPI } from '@/lib/marketApi';
 import { apiRequest } from '@/src/services/apiClient';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export default function MoreScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { userRole, logout, isSignedIn, user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -24,35 +27,35 @@ export default function MoreScreen() {
             if (status === 'approved' || status === 'pending') router.push('/merchant');
             else router.push('/merchant/personal-info');
         } catch {
-            router.push('/merchant');
+            Alert.alert('Unable to load shop', 'Please check your connection and try again.');
         } finally { setLoading(false); }
     };
 
     const mainActions = [
-        { name: 'My Shop', icon: Store, onPress: handleMyShopPress, color: '#329629', bg: 'bg-green-50' },
-        { name: 'Orders', icon: ShoppingBag, onPress: () => router.push('/orders'), color: '#3B82F6', bg: 'bg-blue-50' },
-        { name: 'Wallet', icon: Wallet, onPress: () => router.push('/wallet'), color: '#F59E0B', bg: 'bg-amber-50' },
-        { name: 'Cart', icon: ShoppingCart, onPress: () => router.push('/(tabs)/cart'), color: '#8B5CF6', bg: 'bg-purple-50' },
+        { name: t('my_shop'), icon: Store, onPress: handleMyShopPress, color: '#329629', bg: 'bg-green-50' },
+        { name: t('orders'), icon: ShoppingBag, onPress: () => router.push('/orders'), color: '#3B82F6', bg: 'bg-blue-50' },
+        { name: t('wallet'), icon: Wallet, onPress: () => router.push('/wallet'), color: '#F59E0B', bg: 'bg-amber-50' },
+        { name: t('cart'), icon: ShoppingCart, onPress: () => router.push('/(tabs)/cart'), color: '#8B5CF6', bg: 'bg-purple-50' },
     ];
 
     const menuItems = [
-        { name: 'Wishlist', icon: Heart, onPress: () => router.push('/(profile)/wishlist'), id: 'wishlist' },
-        { name: 'Addresses', icon: MapPin, onPress: () => router.push('/profile/edit'), id: 'address' },
-        { name: 'Market', icon: Grid3X3, onPress: () => router.push('/(tabs)/markets'), id: 'market' },
-        { name: 'Support', icon: Headset, onPress: () => router.push('/help'), id: 'support' },
-        { name: 'Profile', icon: UserIcon, onPress: () => router.push('/profile/edit'), id: 'profile' },
-        { name: 'Privacy & Security', icon: Lock, onPress: () => router.push('/(profile)/privacy-security'), id: 'privacy' },
-        { name: 'Privacy Policy', icon: FileText, onPress: () => Linking.openURL('https://yusuf-babagana.github.io/glapp-privacy-policy/'), id: 'privacy-policy' },
+        { name: t('wishlist'), icon: Heart, onPress: () => router.push('/(profile)/wishlist'), id: 'wishlist' },
+        { name: t('addresses'), icon: MapPin, onPress: () => router.push('/profile/edit'), id: 'address' },
+        { name: t('market'), icon: Grid3X3, onPress: () => router.push('/(tabs)/markets'), id: 'market' },
+        { name: t('support'), icon: Headset, onPress: () => router.push('/help'), id: 'support' },
+        { name: t('profile'), icon: UserIcon, onPress: () => router.push('/profile/edit'), id: 'profile' },
+        { name: t('privacy_security'), icon: Lock, onPress: () => router.push('/(profile)/privacy-security'), id: 'privacy' },
+        { name: t('privacy_policy'), icon: FileText, onPress: () => Linking.openURL('https://yusuf-babagana.github.io/glapp-privacy-policy/'), id: 'privacy-policy' },
     ];
 
     if (isAdmin) {
-        menuItems.push({ name: 'Admin Panel', icon: Shield, onPress: () => router.push('/admin/dashboard'), id: 'admin' });
+        menuItems.push({ name: t('admin_panel'), icon: Shield, onPress: () => router.push('/admin/dashboard'), id: 'admin' });
     }
 
     return (
         <ScreenWrapper>
             <View className="px-6 pt-4 pb-4">
-                <Text className="text-2xl font-black text-gray-900">More</Text>
+                <Text className="text-2xl font-black text-gray-900">{t('more')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
@@ -98,15 +101,26 @@ export default function MoreScreen() {
                     })}
                 </View>
 
+                {/* Language Switcher */}
+                <View className="mx-6 mt-6 bg-white rounded-2xl px-5 py-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
+                    <View className="flex-row items-center mb-2">
+                        <View className="bg-gray-50 w-10 h-10 rounded-xl items-center justify-center mr-4">
+                            <Languages size={20} color="#329629" />
+                        </View>
+                        <Text className="text-gray-900 font-bold text-base flex-1">{t('language')}</Text>
+                    </View>
+                    <LanguageSwitcher variant="dark" />
+                </View>
+
                 {/* Sign Out / Sign In */}
-                <View className="px-6 mt-8">
+                <View className="px-6 mt-4">
                     {isSignedIn ? (
                         <TouchableOpacity
                             onPress={async () => { await logout(); }}
                             className="flex-row items-center justify-center bg-red-50 py-4 rounded-2xl border-2 border-red-100"
                         >
                             <LogOut size={20} color="#EF4444" />
-                            <Text className="text-red-500 font-bold ml-2 text-base">Sign Out</Text>
+                            <Text className="text-red-500 font-bold ml-2 text-base">{t('sign_out')}</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
@@ -115,7 +129,7 @@ export default function MoreScreen() {
                             style={{ shadowColor: '#329629', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
                         >
                             <UserIcon size={20} color="#FFFFFF" />
-                            <Text className="text-white font-bold ml-2 text-base">Sign In to Continue</Text>
+                            <Text className="text-white font-bold ml-2 text-base">{t('sign_in_continue')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -125,24 +139,18 @@ export default function MoreScreen() {
                         <TouchableOpacity
                             onPress={() => {
                                 Alert.alert(
-                                    'Delete Account',
-                                    [
-                                        'This will start the 30-day deletion process.',
-                                        'A confirmation email will be sent to your registered email.',
-                                        'You can cancel this request within 30 days from Privacy & Security.',
-                                        '',
-                                        'All personal data will be permanently anonymized after 30 days.',
-                                    ].join(' '),
-                                    [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        {
-                                            text: 'Request Deletion',
+                                                t('delete_account_title'),
+                                                t('delete_account_msg'),
+                                                [
+                                                    { text: t('cancel'), style: 'cancel' },
+                                                    {
+                                                        text: t('request_deletion'),
                                             style: 'destructive',
                                             onPress: () => {
                                                 setDeleting(true);
                                                 apiRequest('/users/request-deletion/', { method: 'POST' })
-                                                  .then(() => Alert.alert('Request Submitted', 'Check your email for confirmation. Your account will be deleted within 30 days.'))
-                                                  .catch((e: any) => Alert.alert('Error', e.message || 'Failed to request deletion.'))
+                                                  .then(() => Alert.alert(t('deletion_submitted'), t('deletion_email')))
+                                                  .catch((e: any) => Alert.alert(t('error'), e.message || t('transaction_failed')))
                                                   .finally(() => setDeleting(false));
                                             },
                                         },
@@ -155,13 +163,13 @@ export default function MoreScreen() {
                             {deleting ? (
                                 <ActivityIndicator size="small" color="#F87171" />
                             ) : (
-                                <Text className="text-red-400 font-bold text-sm">Delete Account</Text>
+                                <Text className="text-red-400 font-bold text-sm">{t('delete_account')}</Text>
                             )}
                         </TouchableOpacity>
                     </View>
                 )}
 
-                <Text className="text-center text-gray-300 text-xs mt-6 mb-2">Version 1.0.0</Text>
+                <Text className="text-center text-gray-300 text-xs mt-6 mb-2">{t('version')}</Text>
             </ScrollView>
         </ScreenWrapper>
     );

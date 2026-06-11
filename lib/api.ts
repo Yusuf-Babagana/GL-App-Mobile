@@ -36,6 +36,10 @@ api.interceptors.response.use(
   }
 );
 
+export function useApi() {
+  return api;
+}
+
 export const updateProfile = async (data: any) => {
   const response = await api.patch("/users/profile/", data);
   return response.data;

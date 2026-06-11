@@ -9,7 +9,7 @@ export interface User {
   username: string;
   full_name?: string;
   fullName?: string;
-  role: 'buyer' | 'seller' | 'rider' | 'admin';
+  role: 'buyer' | 'seller' | 'admin';
   kyc_status: 'unverified' | 'pending' | 'verified';
   phone_number?: string;
   imageUrl?: string;
