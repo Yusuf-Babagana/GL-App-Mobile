@@ -268,7 +268,9 @@ const resources = {
             added_to_wallet: "added to your wallet",
             new_escrow_funds: "Funds from recent orders",
         },
-
+    },
+    ha: {
+        translation: {
             recent_activity: "Ayyuka na Kwanan Nan",
             see_all: "Duka",
             no_recent_activity: "Babu ayyuka da aka samu kwanan nan",
@@ -281,7 +283,9 @@ const resources = {
             added_to_wallet: "aka kara a cikin walat ɗinku",
             new_escrow_funds: "Kudade daga sabbin oda",
         },
-
+    },
+    ar: {
+        translation: {
             gl_wallet: "GL-Wallet",
             active_wallet: "محفظة نشطة",
             withdrawable_balance: "الرصيد القابل للسحب",
@@ -306,7 +310,7 @@ const resources = {
             added_to_wallet: "تمت إضافته إلى محفظتك",
             new_escrow_funds: "أموال من الطلبات الأخيرة",
         },
-
+    },
 };
 
 const STORE_LANGUAGE_KEY = 'settings.lang';
