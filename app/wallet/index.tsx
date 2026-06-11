@@ -2,15 +2,17 @@ import WalletOnboarding from '@/components/WalletOnboarding';
 import { Colors } from '@/constants/Colors';
 import { useWallet } from '@/context/WalletContext';
 import { marketAPI } from '@/lib/marketApi';
+import api from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowDownLeft, ArrowUpRight, Copy, Eye, EyeOff, History, Landmark, Plus, RefreshCcw } from 'lucide-react-native';
+import { ArrowDownLeft, ArrowUpRight, Copy, Eye, EyeOff, History, Landmark, Plus, RefreshCcw, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as ExpoClipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SafeScreen from '../../components/SafeScreen';
 
 export default function WalletScreen() {
@@ -21,7 +23,10 @@ export default function WalletScreen() {
     const [isSetup, setIsSetup] = useState(false);
     const [wallet, setWallet] = useState<any>(null);
     const [showBalance, setShowBalance] = useState(true);
+    const [newFundsBanner, setNewFundsBanner] = useState<number | null>(null);
     const { balance, updateBalance } = useWallet();
+
+    const LAST_SEEN_TXN_KEY = 'last_seen_txn_id';
 
     const loadWalletData = async () => {
         try {
@@ -29,13 +34,26 @@ export default function WalletScreen() {
             setWallet(data);
             updateBalance(data.balance);
 
-            // CRITICAL CHECK: Show onboarding if BVN is missing OR PIN is missing
-            // If they have a BVN but NO account number, they are "stuck"
-            // Setting setIsSetup(false) will force them back to onboarding
             if (data.account_number && data.user_has_pin) {
                 setIsSetup(true);
             } else {
                 setIsSetup(false);
+            }
+
+            const txnRes = await api.get('/finance/transactions/', {
+                params: { page: 1, page_size: 5 },
+            });
+            const txns: any[] = txnRes.data?.results || txnRes.data || [];
+            const lastSeenId = await AsyncStorage.getItem(LAST_SEEN_TXN_KEY);
+            const newTxns = txns.filter(
+                (t: any) =>
+                    (t.type === 'escrow_release' || t.type === 'deposit') &&
+                    Number(t.id) > Number(lastSeenId || 0)
+            );
+
+            if (newTxns.length > 0) {
+                const total = newTxns.reduce((s: number, t: any) => s + Math.abs(Number(t.amount)), 0);
+                setNewFundsBanner(total);
             }
         } catch (error) {
             console.error("Wallet Load Error:", error);
@@ -43,6 +61,20 @@ export default function WalletScreen() {
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const dismissBanner = async () => {
+        try {
+            const txnRes = await api.get('/finance/transactions/', {
+                params: { page: 1, page_size: 1 },
+            });
+            const txns: any[] = txnRes.data?.results || txnRes.data || [];
+            const latestId = txns[0]?.id;
+            if (latestId) {
+                await AsyncStorage.setItem(LAST_SEEN_TXN_KEY, String(latestId));
+            }
+        } catch {}
+        setNewFundsBanner(null);
     };
 
     useEffect(() => { loadWalletData(); }, []);
@@ -105,6 +137,24 @@ export default function WalletScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
                 showsVerticalScrollIndicator={false}
             >
+                {/* New Funds Banner */}
+                {newFundsBanner !== null && (
+                    <View className="mb-4 bg-green-100 border border-green-300 rounded-3xl p-4 flex-row items-center">
+                        <View className="bg-green-500 w-10 h-10 rounded-2xl items-center justify-center mr-3">
+                            <ArrowDownLeft size={20} color="white" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-green-900 font-black text-sm">
+                                ₦{newFundsBanner.toLocaleString()} {t('added_to_wallet') || 'released to your wallet'}
+                            </Text>
+                            <Text className="text-green-700 text-xs font-medium mt-0.5">{t('new_escrow_funds') || 'Funds from recent orders'}</Text>
+                        </View>
+                        <TouchableOpacity activeOpacity={0.7} onPress={dismissBanner} className="p-2">
+                            <X size={20} color="#166534" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Unified Balance Card */}
                 <View className="mt-2 mb-8 rounded-[40px] overflow-hidden border border-green-900/10">
                     <LinearGradient
