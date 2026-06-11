@@ -215,6 +215,44 @@ export const marketAPI = {
         }
     },
 
+    getBanks: async () => {
+        try {
+            const response = await api.get('/finance/banks/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    verifyBankAccount: async (accountNumber: string, bankCode: string) => {
+        try {
+            const response = await api.post('/finance/verify-account/', {
+                account_number: accountNumber,
+                bank_code: bankCode,
+            });
+            const data = response.data;
+            return typeof data === 'string' ? data : data.account_name || data.name || data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+
+    initiateWithdrawal: async (amount: number, accountNumber: string, bankCode: string, pin: string, bankName?: string, accountName?: string) => {
+        try {
+            const response = await api.post('/finance/withdraw/', {
+                amount: amount.toString(),
+                bank_code: bankCode,
+                bank_name: bankName,
+                account_number: accountNumber,
+                account_name: accountName,
+                pin: pin,
+            });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     fetchDataHistory: async () => {
         const response = await api.get('/finance/data/history/');
         return response.data;

@@ -65,10 +65,7 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
                 <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }}>
-                  <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                </Stack>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
               </View>
             </QueryClientProvider>
           </CartProvider>

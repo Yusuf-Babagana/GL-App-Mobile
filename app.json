@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Globalink",
+    "name": "GLAPP",
     "slug": "GLAPP",
-    "version": "1.0.2",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/gl.jpeg",
     "scheme": "GLAPP",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -23,9 +23,8 @@
     "android": {
       "package": "com.globalinkmarketplace.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/gl.jpeg",
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "INTERNET"

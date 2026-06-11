@@ -104,7 +104,7 @@ export default function WithdrawScreen() {
         setWithdrawing(true);
         try {
             const bank = banks.find(b => b.code === selectedBank);
-            await marketAPI.initiateWithdrawal(withdrawAmount, accountNumber, selectedBank, pin, bank?.name, accountName);
+            const result = await marketAPI.initiateWithdrawal(withdrawAmount, accountNumber, selectedBank, pin, bank?.name, accountName);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
             setAmount('');
@@ -112,14 +112,13 @@ export default function WithdrawScreen() {
             setAccountNumber('');
             setAccountName(null);
 
-            Alert.alert(
-                "Request Queued 👍",
-                "Your withdrawal request has been logged. Funds will process after a brief admin verification review.",
-                [{ text: "OK", onPress: () => router.replace('/merchant') }]
-            );
+            const successMsg = result.message || 'Withdrawal processed successfully.';
+            const ref = result.reference ? `\n\nReference: ${result.reference}` : '';
+            Alert.alert("Success 👍", successMsg + ref, [{ text: "OK", onPress: () => router.back() }]);
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert("Withdrawal Failed", error.error || error.detail || error.message || "An error occurred during withdrawal.");
+            const errData = error.response?.data || error;
+            Alert.alert("Withdrawal Failed", errData.error || errData.detail || errData.message || "An error occurred during withdrawal.");
         } finally {
             setWithdrawing(false);
         }
