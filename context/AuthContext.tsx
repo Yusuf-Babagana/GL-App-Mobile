@@ -213,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (user?.is_admin || role === 'admin') {
                         router.replace("/admin/dashboard");
                     } else if (role === 'seller') {
-                        router.replace("/merchant/dashboard");
+                        router.replace("/merchant");
                     } else {
                         router.replace("/(tabs)");
                     }
