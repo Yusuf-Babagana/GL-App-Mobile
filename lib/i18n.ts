@@ -267,6 +267,7 @@ const resources = {
             copied_clipboard: "Account number copied to clipboard.",
             added_to_wallet: "added to your wallet",
             new_escrow_funds: "Funds from recent orders",
+            escrow_release: "Escrow Release",
         },
     },
     ha: {
@@ -282,6 +283,7 @@ const resources = {
             copied_clipboard: "An kwafa lambar asusu a allon allo.",
             added_to_wallet: "aka kara a cikin walat ɗinku",
             new_escrow_funds: "Kudade daga sabbin oda",
+            escrow_release: "Sakin Kuɗi",
         },
     },
     ar: {
@@ -309,6 +311,7 @@ const resources = {
             copied_clipboard: "تم نسخ رقم الحساب إلى الحافظة.",
             added_to_wallet: "تمت إضافته إلى محفظتك",
             new_escrow_funds: "أموال من الطلبات الأخيرة",
+            escrow_release: "الإفراج عن الضمان",
         },
     },
 };

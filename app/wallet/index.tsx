@@ -206,7 +206,7 @@ export default function WalletScreen() {
                     {[
                         { label: t('top_up'), icon: <Plus size={24} color="#4ADE80" />, bg: 'bg-green-50', route: '/wallet/deposit' },
                         { label: t('withdraw'), icon: <Landmark size={24} color="#1F2937" />, bg: 'bg-gray-100', route: '/wallet/withdraw' },
-                        { label: t('history'), icon: <History size={24} color="#1F2937" />, bg: 'bg-gray-100', route: () => Alert.alert(t('statement') || "Statement", "Statement generator is active in the log below.") }
+                        { label: t('history'), icon: <History size={24} color="#1F2937" />, bg: 'bg-gray-100', route: '/wallet/history' }
                     ].map((action, i) => (
                         <TouchableOpacity
                             key={i}
@@ -259,7 +259,7 @@ export default function WalletScreen() {
                 {/* Transaction History */}
                 <View className="mb-4 flex-row justify-between items-center">
                     <Text className="text-lg font-black text-slate-900">{t('recent_activity')}</Text>
-                    <TouchableOpacity activeOpacity={0.7}>
+                    <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/wallet/history' as any)}>
                         <Text className="text-green-600 font-bold text-xs">{t('see_all')}</Text>
                     </TouchableOpacity>
                 </View>
