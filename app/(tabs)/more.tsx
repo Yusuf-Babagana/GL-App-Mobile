@@ -8,6 +8,7 @@ import { marketAPI } from '@/lib/marketApi';
 import { apiRequest } from '@/src/services/apiClient';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import KYCBanner from '@/components/KYCBanner';
+import { toUserFriendlyError } from '@/lib/errorMapper';
 import { useT as useTranslation } from '@/lib/useT';
 
 export default function MoreScreen() {
@@ -153,7 +154,7 @@ export default function MoreScreen() {
                                                 setDeleting(true);
                                                 apiRequest('/users/request-deletion/', { method: 'POST' })
                                                   .then(() => Alert.alert(t('deletion_submitted'), t('deletion_email')))
-                                                  .catch((e: any) => Alert.alert(t('error'), e.message || t('transaction_failed')))
+                                                  .catch((e: any) => Alert.alert(t('error'), toUserFriendlyError(e, t)))
                                                   .finally(() => setDeleting(false));
                                             },
                                         },

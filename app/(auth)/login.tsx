@@ -4,6 +4,7 @@ import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { getToken, setToken } from "@/src/services/apiClient";
 import { debug } from "@/src/services/debug";
+import { toUserFriendlyError } from "@/lib/errorMapper";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
@@ -49,7 +50,7 @@ export default function LoginScreen() {
 
             await setSession(jwt, data.user);
         } catch (error: any) {
-            Alert.alert(t('authentication_failed'), error.message || t('invalid_credentials'));
+            Alert.alert(t('authentication_failed'), toUserFriendlyError(error, t));
         } finally {
             setIsLoading(false);
         }

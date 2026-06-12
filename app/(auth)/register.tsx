@@ -5,9 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { setToken } from "@/src/services/apiClient";
 import { Ionicons } from "@expo/vector-icons";
 import { authService } from "@/services/auth";
+import { toUserFriendlyError } from "@/lib/errorMapper";
 import { Link } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useT as useTranslation } from '@/lib/useT';
 
 export default function RegisterScreen() {
@@ -21,6 +22,8 @@ export default function RegisterScreen() {
         confirm_password: "",
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleRegister = async () => {
         if (!form.full_name || !form.email || !form.password) {
@@ -41,47 +44,25 @@ export default function RegisterScreen() {
                 password2: form.confirm_password,
             });
 
-            const loginData = await authService.login({
+            const loginResponse = await authService.login({
                 email: form.email.trim().toLowerCase(),
                 password: form.password
             });
 
-            const tokenToSave = loginData.access || loginData.token || loginData.key || loginData.accessToken;
-            if (!tokenToSave) throw new Error('No token returned from server.');
-            const userProfileToSave = loginData.user;
+            const tokenToSave = loginResponse.access || loginResponse.token || loginResponse.key || loginResponse.accessToken;
+            if (!tokenToSave) {
+                throw new Error('No token returned from server.');
+            }
+            const userProfileToSave = loginResponse.user;
+
             await setToken(tokenToSave);
             await setSession(tokenToSave, userProfileToSave);
 
             Alert.alert(t('success'), t('account_ready'));
 
         } catch (error: any) {
-            let errorMessage = t('verify_info');
-
-            if (error.response) {
-                const status = error.response.status;
-                const data = error.response.data;
-
-                if (data) {
-                    if (typeof data === 'string') {
-                        errorMessage = data;
-                    } else if (typeof data === 'object') {
-                        const keys = Object.keys(data);
-                        if (keys.length > 0) {
-                            const firstErr = data[keys[0]];
-                            errorMessage = Array.isArray(firstErr) ? firstErr[0] : String(firstErr);
-                        }
-                    }
-                } else if (status === 400) {
-                    errorMessage = t('email_registered');
-                } else if (status === 403) {
-                    errorMessage = t('access_denied');
-                } else if (status >= 500) {
-                    errorMessage = t('server_error');
-                }
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
+            console.log('[REGISTER] error:', error);
+            const errorMessage = toUserFriendlyError(error, t);
             Alert.alert(t('registration_error'), errorMessage);
         } finally {
             setIsLoading(false);
@@ -121,21 +102,38 @@ export default function RegisterScreen() {
                         value={form.phone_number}
                         onChangeText={(val) => setForm({ ...form, phone_number: val })}
                     />
-                    <Input
-                        label={t('password')}
-                        placeholder={t('password_placeholder_create')}
-                        secureTextEntry
-                        value={form.password}
-                        onChangeText={(val) => setForm({ ...form, password: val })}
-                    />
-                    <Input
-                        label={t('confirm_password')}
-                        placeholder={t('confirm_password_placeholder')}
-                        secureTextEntry
-                        value={form.confirm_password}
-                        onChangeText={(val) => setForm({ ...form, confirm_password: val })}
-                        containerStyle="mb-6"
-                    />
+                    <View className="mb-5">
+                        <Text className="text-gray-700 font-bold text-xs mb-2 uppercase tracking-widest">{t('password')}</Text>
+                        <View className="flex-row items-center bg-gray-50 border-2 border-gray-100 rounded-2xl px-5">
+                            <TextInput
+                                className="flex-1 py-4 text-gray-900 text-base font-semibold"
+                                placeholder={t('password_placeholder_create')}
+                                placeholderTextColor="#A0AEC0"
+                                secureTextEntry={!showPassword}
+                                value={form.password}
+                                onChangeText={(val) => setForm({ ...form, password: val })}
+                            />
+                            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowPassword(p => !p)} className="p-2">
+                                <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    <View className="mb-6">
+                        <Text className="text-gray-700 font-bold text-xs mb-2 uppercase tracking-widest">{t('confirm_password')}</Text>
+                        <View className="flex-row items-center bg-gray-50 border-2 border-gray-100 rounded-2xl px-5">
+                            <TextInput
+                                className="flex-1 py-4 text-gray-900 text-base font-semibold"
+                                placeholder={t('confirm_password_placeholder')}
+                                placeholderTextColor="#A0AEC0"
+                                secureTextEntry={!showConfirmPassword}
+                                value={form.confirm_password}
+                                onChangeText={(val) => setForm({ ...form, confirm_password: val })}
+                            />
+                            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowConfirmPassword(p => !p)} className="p-2">
+                                <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={22} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
                     <Button
                         title={t('create_account')}
