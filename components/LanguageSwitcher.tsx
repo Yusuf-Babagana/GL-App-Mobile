@@ -24,7 +24,6 @@ export default function LanguageSwitcher({ variant = 'light' }: Props) {
     }, [i18n]);
 
     const pick = useCallback((lng: string) => {
-        console.log('[LangSwitcher] pick called:', lng);
         changeAppLanguage(lng);
         if (lng === 'ar') {
             I18nManager.allowRTL(true);
