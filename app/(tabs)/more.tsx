@@ -7,6 +7,7 @@ import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { marketAPI } from '@/lib/marketApi';
 import { apiRequest } from '@/src/services/apiClient';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import KYCBanner from '@/components/KYCBanner';
 import { useT as useTranslation } from '@/lib/useT';
 
 export default function MoreScreen() {
@@ -80,6 +81,8 @@ export default function MoreScreen() {
                         })}
                     </View>
                 </View>
+
+                <KYCBanner />
 
                 {/* Menu List */}
                 <View className="mx-6 bg-white rounded-2xl overflow-hidden" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>

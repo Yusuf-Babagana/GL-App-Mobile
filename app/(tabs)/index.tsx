@@ -7,6 +7,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useT as useTranslation } from '@/lib/useT';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import KYCBanner from '@/components/KYCBanner';
 
 const SkeletonCard = () => {
   const opacity = new Animated.Value(0.3);
@@ -86,6 +87,8 @@ export default function ExploreScreen() {
           <LanguageSwitcher />
         </View>
       </View>
+
+      <KYCBanner />
 
       {isLoading ? (
         <View className="px-5 flex-row flex-wrap justify-between">

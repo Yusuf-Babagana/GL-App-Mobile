@@ -16,7 +16,7 @@ export interface User {
     full_name?: string;
     fullName?: string;
     role: 'buyer' | 'seller' | 'rider' | 'admin';
-    kyc_status: 'unverified' | 'pending' | 'verified';
+    kyc_status: 'unverified' | 'pending' | 'verified' | 'rejected';
     phone_number?: string;
     imageUrl?: string;
 }
@@ -204,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 2. AUTHENTICATION & KYC GATE
             if (isSignedIn) {
                 if (rootSegment === "onboarding") {
-                    router.replace((kycStatus === 'verified' ? "/(tabs)" : "/kyc") as any);
+                    router.replace((kycStatus === 'verified' || kycStatus === 'unverified' ? "/(tabs)" : "/kyc") as any);
                     return;
                 }
 
