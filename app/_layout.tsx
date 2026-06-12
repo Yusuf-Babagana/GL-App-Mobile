@@ -11,7 +11,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { LogBox, View } from "react-native";
 import "../global.css";
 
@@ -38,13 +38,9 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-  const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    initPromise.then(() => {
-      setI18nReady(true);
-      SplashScreen.hideAsync();
-    });
+    initPromise.then(() => SplashScreen.hideAsync());
   }, []);
 
   useEffect(() => {
@@ -74,7 +70,7 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
                 <StatusBar style="dark" />
-                {i18nReady && <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />}
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
               </View>
             </QueryClientProvider>
           </CartProvider>
