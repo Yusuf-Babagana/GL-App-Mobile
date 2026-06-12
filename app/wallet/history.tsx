@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, History as HistoryIcon } from 'lucide-react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 import SafeScreen from '../../components/SafeScreen';
 
 const FILTERS = ['all', 'deposit', 'withdrawal', 'escrow_release'] as const;

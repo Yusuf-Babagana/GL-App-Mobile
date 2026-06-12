@@ -7,7 +7,7 @@ import { Address } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 function AddressesScreen() {
   const { t } = useTranslation();

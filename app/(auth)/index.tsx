@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Briefcase, Globe, ShieldCheck, ShoppingCart } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 const AuthScreen = () => {
   const { t } = useTranslation();

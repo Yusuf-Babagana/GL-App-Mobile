@@ -8,7 +8,7 @@ import { authService } from "@/services/auth";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 export default function RegisterScreen() {
     const { t } = useTranslation();

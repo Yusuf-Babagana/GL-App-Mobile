@@ -7,7 +7,6 @@ import "@/lib/i18n";
 import { loadSavedLanguage, default as i18n } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import * as Notifications from 'expo-notifications';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
@@ -50,16 +49,19 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isExpoGo) {
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        }),
-      });
+      try {
+        const Notifications = require('expo-notifications');
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+          }),
+        });
+      } catch (_) {}
     }
   }, [isExpoGo]);
 

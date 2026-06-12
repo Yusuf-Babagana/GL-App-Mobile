@@ -7,7 +7,7 @@ import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { marketAPI } from '@/lib/marketApi';
 import { apiRequest } from '@/src/services/apiClient';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 export default function MoreScreen() {
     const { t } = useTranslation();

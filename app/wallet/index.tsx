@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, Copy, Eye, EyeOff, History, Landmark, Plus, RefreshCcw, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 import * as ExpoClipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SafeScreen from '../../components/SafeScreen';

@@ -9,7 +9,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 function OrdersScreen() {
   const { t } = useTranslation();

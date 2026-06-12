@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { useWallet } from '@/context/WalletContext';
 import { marketAPI } from '@/lib/marketApi';
 import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 
 export default function CheckoutScreen() {
   const { t } = useTranslation();

@@ -331,7 +331,9 @@ i18n
     });
 
 export function changeAppLanguage(lng: string) {
+    console.log('[i18n] changeAppLanguage called with:', lng);
     i18n.changeLanguage(lng);
+    console.log('[i18n] i18n.language is now:', i18n.language);
     try {
         AsyncStorage.setItem(STORE_LANGUAGE_KEY, lng);
     } catch (_) { }

@@ -5,7 +5,7 @@ import { ProductCard } from '@/components/dashboard/ProductCard';
 import { marketAPI } from '@/lib/marketApi';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const SkeletonCard = () => {

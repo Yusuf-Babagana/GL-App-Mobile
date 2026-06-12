@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useT as useTranslation } from '@/lib/useT';
 import { I18nManager, Text, TouchableOpacity, View } from 'react-native';
 import { changeAppLanguage } from '@/lib/i18n';
 
@@ -24,6 +24,7 @@ export default function LanguageSwitcher({ variant = 'light' }: Props) {
     }, [i18n]);
 
     const pick = useCallback((lng: string) => {
+        console.log('[LangSwitcher] pick called:', lng);
         changeAppLanguage(lng);
         if (lng === 'ar') {
             I18nManager.allowRTL(true);
