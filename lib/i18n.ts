@@ -1,9 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Localization from 'expo-localization';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// THE DICTIONARY
 const resources = {
     en: {
         translation: {
@@ -318,48 +316,33 @@ const resources = {
 
 const STORE_LANGUAGE_KEY = 'settings.lang';
 
-const languageDetector = {
-    type: 'languageDetector',
-    async: true,
-    init: () => { },
-    detect: async function (callback: (lang: string) => void) {
-        try {
-            // 1. Check if user selected a language before
-            const savedLanguage = await AsyncStorage.getItem(STORE_LANGUAGE_KEY);
-            if (savedLanguage) {
-                return callback(savedLanguage);
-            }
-        } catch (error) {
-
-        }
-        // 2. Fallback to phone's default language
-        const bestLanguage = Localization.getLocales()[0]?.languageCode || 'en';
-        callback(bestLanguage);
-    },
-    cacheUserLanguage: async function (language: string) {
-        try {
-            await AsyncStorage.setItem(STORE_LANGUAGE_KEY, language);
-        } catch (error) {
-
-        }
-    },
-};
-
-const initPromise = i18n
+i18n
     .use(initReactI18next)
-    // @ts-ignore
-    .use(languageDetector)
     .init({
         resources,
         fallbackLng: 'en',
-        cleanCode: true,
+        lng: 'en',
         interpolation: {
             escapeValue: false,
         },
         react: {
-            useSuspense: false
-        }
+            useSuspense: false,
+        },
     });
 
+export function changeAppLanguage(lng: string) {
+    i18n.changeLanguage(lng);
+    try {
+        AsyncStorage.setItem(STORE_LANGUAGE_KEY, lng);
+    } catch (_) { }
+}
+
+export async function loadSavedLanguage(): Promise<string | null> {
+    try {
+        return await AsyncStorage.getItem(STORE_LANGUAGE_KEY);
+    } catch (_) {
+        return null;
+    }
+}
+
 export default i18n;
-export { initPromise };

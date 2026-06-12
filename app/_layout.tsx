@@ -4,7 +4,7 @@ import { CartProvider } from "@/context/CartContext";
 import { WalletProvider } from "@/context/WalletContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import "@/lib/i18n";
-import { initPromise } from "@/lib/i18n";
+import { loadSavedLanguage, default as i18n } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
@@ -40,7 +40,12 @@ export default function RootLayout() {
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
   useEffect(() => {
-    initPromise.then(() => SplashScreen.hideAsync());
+    loadSavedLanguage().then((saved) => {
+      if (saved && saved !== 'en') {
+        i18n.changeLanguage(saved);
+      }
+      SplashScreen.hideAsync();
+    });
   }, []);
 
   useEffect(() => {
