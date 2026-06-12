@@ -13,6 +13,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { LogBox, View } from "react-native";
+import { I18nextProvider } from 'react-i18next';
 import "../global.css";
 
 if (typeof ErrorUtils !== 'undefined') {
@@ -25,7 +26,6 @@ if (typeof ErrorUtils !== 'undefined') {
 
 SplashScreen.preventAutoHideAsync();
 
-// Suppress the specific Reanimated and Expo Go warnings
 LogBox.ignoreLogs([
   "Expo Go",
   "The 'expo-notifications' libraries are not fully supported in Expo Go",
@@ -49,8 +49,6 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    // Yusuf, we only set up the handler if we are NOT in Expo Go
-    // This prevents the SDK 53 crash on Android
     if (!isExpoGo) {
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -62,8 +60,6 @@ export default function RootLayout() {
           priority: Notifications.AndroidNotificationPriority.HIGH,
         }),
       });
-    } else {
-
     }
   }, [isExpoGo]);
 
@@ -73,10 +69,12 @@ export default function RootLayout() {
         <OnboardingProvider>
           <CartProvider>
             <QueryClientProvider client={queryClient}>
-              <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-                <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
-              </View>
+              <I18nextProvider i18n={i18n}>
+                <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                  <StatusBar style="dark" />
+                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
+                </View>
+              </I18nextProvider>
             </QueryClientProvider>
           </CartProvider>
         </OnboardingProvider>
