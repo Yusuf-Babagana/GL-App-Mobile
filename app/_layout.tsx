@@ -4,13 +4,14 @@ import { CartProvider } from "@/context/CartContext";
 import { WalletProvider } from "@/context/WalletContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import "@/lib/i18n";
+import { initPromise } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LogBox, View } from "react-native";
 import "../global.css";
 
@@ -37,6 +38,14 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initPromise.then(() => {
+      setI18nReady(true);
+      SplashScreen.hideAsync();
+    });
+  }, []);
 
   useEffect(() => {
     // Yusuf, we only set up the handler if we are NOT in Expo Go
@@ -65,7 +74,7 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
                 <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
+                {i18nReady && <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />}
               </View>
             </QueryClientProvider>
           </CartProvider>

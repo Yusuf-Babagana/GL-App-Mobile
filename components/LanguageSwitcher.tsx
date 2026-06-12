@@ -1,35 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { I18nManager, Text, TouchableOpacity, View } from 'react-native';
+import { I18nManager, Text, TouchableOpacity, View, Alert } from 'react-native';
+import i18n from '@/lib/i18n';
 
 interface Props {
     variant?: 'light' | 'dark';
 }
 
 export default function LanguageSwitcher({ variant = 'light' }: Props) {
-    const { i18n, t } = useTranslation();
-    const [current, setCurrent] = useState(i18n.resolvedLanguage || i18n.language);
+    const { t: _ } = useTranslation();
+    const [lang, setLang] = useState<string>('en');
 
     useEffect(() => {
-        const handleLanguageChanged = (lng: string) => {
-            setCurrent(lng);
+        const current = i18n.language?.split('-')[0] || 'en';
+        setLang(current);
+        const handle = (lng: string) => {
+            setLang(lng?.split('-')[0] || 'en');
         };
-        i18n.on('languageChanged', handleLanguageChanged);
+        i18n.on('languageChanged', handle);
         return () => {
-            i18n.off('languageChanged', handleLanguageChanged);
+            i18n.off('languageChanged', handle);
         };
-    }, [i18n]);
+    }, []);
 
-    const changeLanguage = (lang: string) => {
-        i18n.changeLanguage(lang);
-        const isRtl = lang === 'ar';
-        if (I18nManager.isRTL !== isRtl) {
-            I18nManager.allowRTL(isRtl);
-            I18nManager.forceRTL(isRtl);
+    const changeLanguage = useCallback((lng: string) => {
+        i18n.changeLanguage(lng).catch(() => {});
+        if (lng === 'ar') {
+            I18nManager.allowRTL(true);
+            I18nManager.forceRTL(true);
+        } else {
+            I18nManager.allowRTL(false);
+            I18nManager.forceRTL(false);
         }
-    };
+    }, []);
 
-    const lang = current;
     const activeStyle = variant === 'dark' ? 'text-green-900' : 'text-white';
     const inactiveStyle = variant === 'dark' ? 'text-gray-400' : 'text-white/50';
     const pipeStyle = variant === 'dark' ? 'text-gray-300' : 'text-white/30';
@@ -37,15 +41,15 @@ export default function LanguageSwitcher({ variant = 'light' }: Props) {
     return (
         <View className="flex-row items-center justify-start">
             <TouchableOpacity onPress={() => changeLanguage('en')} activeOpacity={0.6} className="px-3 py-2">
-                <Text className={`text-xs font-bold ${lang.startsWith('en') ? activeStyle : inactiveStyle}`}>EN</Text>
+                <Text className={`text-xs font-bold ${lang === 'en' ? activeStyle : inactiveStyle}`}>EN</Text>
             </TouchableOpacity>
             <Text className={`${pipeStyle} text-xs`}>|</Text>
             <TouchableOpacity onPress={() => changeLanguage('ha')} activeOpacity={0.6} className="px-3 py-2">
-                <Text className={`text-xs font-bold ${lang.startsWith('ha') ? activeStyle : inactiveStyle}`}>HA</Text>
+                <Text className={`text-xs font-bold ${lang === 'ha' ? activeStyle : inactiveStyle}`}>HA</Text>
             </TouchableOpacity>
             <Text className={`${pipeStyle} text-xs`}>|</Text>
             <TouchableOpacity onPress={() => changeLanguage('ar')} activeOpacity={0.6} className="px-3 py-2">
-                <Text className={`text-xs font-bold ${lang.startsWith('ar') ? activeStyle : inactiveStyle}`}>AR</Text>
+                <Text className={`text-xs font-bold ${lang === 'ar' ? activeStyle : inactiveStyle}`}>AR</Text>
             </TouchableOpacity>
         </View>
     );

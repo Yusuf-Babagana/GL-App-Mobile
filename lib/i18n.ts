@@ -345,7 +345,7 @@ const languageDetector = {
     },
 };
 
-i18n
+const initPromise = i18n
     .use(initReactI18next)
     // @ts-ignore
     .use(languageDetector)
@@ -362,3 +362,4 @@ i18n
     });
 
 export default i18n;
+export { initPromise };
