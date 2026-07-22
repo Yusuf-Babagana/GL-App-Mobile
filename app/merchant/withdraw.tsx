@@ -122,12 +122,20 @@ export default function MerchantWithdraw() {
       setAccountName(null);
 
       const successMsg = result.message || 'Withdrawal processed successfully.';
-      const ref = result.reference ? `\n\nReference: ${result.reference}` : '';
+      const ref = result.ticket_id ? `\n\nTicket ID: ${result.ticket_id}` : '';
       Alert.alert('Success 👍', successMsg + ref, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const errData = error.response?.data || error;
-      Alert.alert('Payout Failed', errData.error || errData.detail || errData.message || 'An error occurred during processing.');
+      const data = error.response?.data;
+      let msg = 'An error occurred during processing.';
+      if (typeof data === 'string') {
+        msg = data;
+      } else if (data) {
+        msg = data.detail || data.error || data.message || msg;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      Alert.alert('Payout Failed', msg);
     } finally {
       setWithdrawing(false);
     }

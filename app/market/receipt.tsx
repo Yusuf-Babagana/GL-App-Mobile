@@ -218,7 +218,10 @@ export default function ReceiptScreen() {
             {loading === 'pdf' ? <ActivityIndicator color="#329629" size="small" /> : <><Download size={20} color="#329629" /><Text className="text-primary font-bold text-base ml-3">Download PDF</Text></>}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.back()} className="bg-gray-100 py-4 rounded-2xl items-center">
+          <TouchableOpacity
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            className="bg-gray-100 py-4 rounded-2xl items-center"
+          >
             <Text className="text-gray-600 font-bold text-base">Done</Text>
           </TouchableOpacity>
         </View>

@@ -180,7 +180,7 @@ export default function WalletScreen() {
                             <View className="flex-1 bg-green-900/5 p-4 rounded-3xl border border-green-900/10">
                                 <Text className="text-green-900/50 text-[9px] font-bold uppercase mb-1">{t('withdrawable_balance')}</Text>
                                 <Text className="text-green-950 text-2xl font-black tracking-tight">
-                                    {showBalance ? `₦${Number(wallet.balance).toLocaleString()}` : '••••••'}
+                                    {showBalance ? `₦${Number(wallet.available_balance ?? 0).toLocaleString()}` : '••••••'}
                                 </Text>
                             </View>
                             <View className="flex-1 bg-green-900/5 p-4 rounded-3xl border border-green-900/10">

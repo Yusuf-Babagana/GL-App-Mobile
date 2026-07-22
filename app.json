@@ -11,14 +11,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.globalinkmarketplace.app",
+      "buildNumber": "1",
+      "appleTeamId": "",
       "statusBarHidden": false,
       "statusBarStyle": "dark-content",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Globalink needs access to your photo library to let you upload a profile picture.",
         "NSCameraUsageDescription": "Globalink needs camera access to let you take a profile picture.",
         "NSLocationWhenInUseUsageDescription": "Globalink uses your location to show nearby stores and services.",
-        "NSNotificationsUsageDescription": "Globalink sends notifications for order updates and promotions."
-      }
+        "NSNotificationsUsageDescription": "Globalink sends notifications for order updates and promotions.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      },
+      "associatedDomains": []
     },
     "android": {
       "package": "com.globalinkmarketplace.app",

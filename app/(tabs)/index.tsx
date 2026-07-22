@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Animated } from 'react-native';
-import { Search, ShoppingBag, Sparkles } from 'lucide-react-native';
+import { Search, ShoppingBag } from 'lucide-react-native';
 import { ProductCard } from '@/components/dashboard/ProductCard';
 import { marketAPI } from '@/lib/marketApi';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useT as useTranslation } from '@/lib/useT';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import KYCBanner from '@/components/KYCBanner';
+import PromotedTicker from '@/components/dashboard/PromotedTicker';
 
 const SkeletonCard = () => {
   const opacity = new Animated.Value(0.3);
@@ -66,23 +67,7 @@ export default function ExploreScreen() {
       </View>
 
       <View className="px-5 mb-5">
-        <View className="bg-gradient-to-br from-primary to-primary/80 p-6 rounded-3xl overflow-hidden" style={{ backgroundColor: '#329629' }}>
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 pr-4">
-              <View className="flex-row items-center mb-2">
-                <Sparkles size={16} color="#FFF" />
-                <Text className="text-white/80 text-xs font-bold ml-1.5 uppercase tracking-widest">{t('featured')}</Text>
-              </View>
-              <Text className="text-white text-xl font-black leading-tight">
-                {t('shop_smarter')}
-              </Text>
-              <Text className="text-white/70 text-sm mt-1 font-medium">{t('discover_deals')}</Text>
-            </View>
-            <View className="w-20 h-20 rounded-full bg-white/15 items-center justify-center">
-              <ShoppingBag size={36} color="white" />
-            </View>
-          </View>
-        </View>
+        <PromotedTicker />
         <View className="-mt-1 mb-3">
           <LanguageSwitcher />
         </View>

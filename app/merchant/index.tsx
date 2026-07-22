@@ -62,15 +62,15 @@ export default function MerchantStudioDashboard() {
           marketAPI.get('/market/merchant/analytics/'),
           marketAPI.get('/market/seller/products/').catch(() => ({ data: [] })),
           marketAPI.getSellerOrders().catch(() => []),
-          marketAPI.get('/finance/wallet/').then(r => r.data).catch(() => ({ balance: 0, escrow_balance: 0 }))
+          marketAPI.get('/finance/wallet/').then(r => r.data).catch(() => ({ available_balance: 0, locked_balance: 0 }))
         ]);
         setDashboardStats(analyticsRes.data.stats);
         setShopInfo({ name: analyticsRes.data.shop_name, role: 'Shop Owner' });
         setProducts(productsRes.data.results || productsRes.data);
         setOrders(ordersRes.results || ordersRes.data || ordersRes);
         setWallet({
-          balance: Number(walletRes.balance ?? 0),
-          escrow_balance: Number(walletRes.escrow_balance ?? 0)
+          balance: Number(walletRes.available_balance ?? 0),
+          escrow_balance: Number(walletRes.locked_balance ?? 0)
         });
         return;
       }
@@ -224,6 +224,13 @@ export default function MerchantStudioDashboard() {
             className="flex-1 bg-slate-900 p-4 rounded-2xl items-center"
           >
             <Text className="text-white font-black text-sm">Orders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push('/promoted-post/create')}
+            className="flex-1 bg-amber-500 p-4 rounded-2xl items-center"
+          >
+            <Text className="text-white font-black text-sm">Promote</Text>
           </TouchableOpacity>
         </View>
 

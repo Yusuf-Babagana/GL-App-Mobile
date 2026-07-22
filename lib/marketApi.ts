@@ -479,6 +479,31 @@ export const marketAPI = {
             throw error;
         }
     },
+    getActivePromotedPosts: async () => {
+        try {
+            const response = await api.get('/market/promoted-posts/active/');
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching promoted posts:", error);
+            return [];
+        }
+    },
+
+    getPromotedPostPricing: async () => {
+        try {
+            const response = await api.get('/market/promoted-posts/pricing/');
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching promoted post pricing:", error);
+            return [];
+        }
+    },
+
+    createPromotedPost: async (data: { text_content: string; product: number; duration_type: '24h' | '3days' | '1wk' }) => {
+        const response = await api.post('/market/promoted-posts/', data);
+        return response.data;
+    },
+
     getVideoAds: async (pageNum: number = 1) => {
         try {
             const response = await api.get('/market/video-ads/', {

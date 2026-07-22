@@ -29,7 +29,6 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<User>;
     setSession: (token: any, userProfile: any) => Promise<void>;
     logout: () => Promise<void>;
-    completeOnboarding: () => Promise<void>;
     fetchProfile: () => Promise<string | null>;
 }
 
@@ -42,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
     const router = useRouter();
     const segments = useSegments();
 
@@ -148,13 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const initApp = async () => {
             try {
-                // Check Onboarding
-                // FIX: Temporarily clearing this to force onboarding to show as requested
-                await SecureStore.deleteItemAsync("hasSeenOnboarding");
-
-                const onboardingVal = await SecureStore.getItemAsync("hasSeenOnboarding");
-                setHasOnboarded(onboardingVal === "true");
-
                 // Check Auth
                 const token = await getToken();
                 const oldToken = await SecureStore.getItemAsync("accessToken");
@@ -185,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Navigation Guard: Handles Redirects based on state changes
     useEffect(() => {
-        if (isLoading || hasOnboarded === null) return;
+        if (isLoading) return;
 
         const rootSegment = segments[0];
         const fullPath = segments.join('/');
@@ -193,21 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Wrap the guard execution in a safe macro-task delay to prevent navigation context crashes
         const timer = setTimeout(() => {
-            // 1. HIGHEST PRIORITY: ONBOARDING
-            if (!hasOnboarded) {
-                if (rootSegment !== "onboarding") {
-                    router.replace("/onboarding");
-                }
-                return;
-            }
-
-            // 2. AUTHENTICATION & KYC GATE
+            // 1. AUTHENTICATION & KYC GATE
             if (isSignedIn) {
-                if (rootSegment === "onboarding") {
-                    router.replace((kycStatus === 'verified' || kycStatus === 'unverified' ? "/(tabs)" : "/kyc") as any);
-                    return;
-                }
-
                 if (rootSegment === '(auth)') {
                     const role = user?.active_role || (user?.is_admin ? 'admin' : 'buyer');
                     if (user?.is_admin || role === 'admin') {
@@ -237,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [isSignedIn, user?.kyc_status, segments, isLoading, hasOnboarded]);
+    }, [isSignedIn, user?.kyc_status, segments, isLoading]);
 
 
 
@@ -261,15 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
     }
 
-    const completeOnboarding = async () => {
-        await SecureStore.setItemAsync("hasSeenOnboarding", "true");
-        setHasOnboarded(true);
-        // User requested Guest Mode: Go to discovery/tabs first.
-        router.replace("/(tabs)");
-    };
-
     return (
-        <AuthContext.Provider value={{ isSignedIn, isLoading, userRole, user, login, setSession, logout, completeOnboarding, fetchProfile }}>
+        <AuthContext.Provider value={{ isSignedIn, isLoading, userRole, user, login, setSession, logout, fetchProfile }}>
             {children}
         </AuthContext.Provider>
     );
