@@ -6,35 +6,59 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function StorePublicView() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [store, setStore] = useState<any>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+
+    const fetchStoreData = async () => {
+        try {
+            setLoading(true);
+            setLoadError(false);
+            // Fetch store details and all products
+            const [storeData, data] = await Promise.all([
+                marketAPI.getStoreDetail(id as string),
+                marketAPI.getProducts(null, null, id as string)
+            ]);
+            setStore(storeData);
+            const storeProducts = data?.results ?? [];
+            setProducts(storeProducts);
+        } catch (e) {
+            console.error(e);
+            setLoadError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStoreData = async () => {
-            try {
-                // Fetch store details and all products
-                const [storeData, data] = await Promise.all([
-                    marketAPI.getStoreDetail(id as string),
-                    marketAPI.getProducts('', null, parseInt(id as string))
-                ]);
-                setStore(storeData);
-                const storeProducts = data?.results ?? [];
-                setProducts(storeProducts);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStoreData();
     }, [id]);
 
-    if (loading) return <ActivityIndicator size="large" color={Colors.primary} className="flex-1" />;
+    if (loading) {
+        return (
+            <View className="flex-1 items-center justify-center bg-background">
+                <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <ErrorState
+                title="Couldn't load this store"
+                description="Check your connection and try again."
+                onRetry={fetchStoreData}
+            />
+        );
+    }
 
     return (
         <View className="flex-1 bg-background">
@@ -43,9 +67,17 @@ export default function StorePublicView() {
                 colors={[Colors.primaryDark, Colors.primary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                className="pt-14 pb-10 px-6 rounded-b-[40px] shadow-lg shadow-primary/30"
+                className="pb-10 px-6 rounded-b-[40px] shadow-lg shadow-primary/30"
+                style={{ paddingTop: insets.top + 12 }}
             >
-                <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} className="mb-6 w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
+                    className="mb-6 w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md"
+                >
                     <Ionicons name="arrow-back" size={24} color="white" />
                 </TouchableOpacity>
 
@@ -63,16 +95,20 @@ export default function StorePublicView() {
                         </Text>
                     </View>
                 </View>
-                <Text className="text-primary-container mt-5 text-sm font-medium leading-6 opacity-90 pl-1 border-l-2 border-white/30">{store?.description}</Text>
+                <Text numberOfLines={3} className="text-primary-container mt-5 text-sm font-medium leading-6 opacity-90 pl-1 border-l-2 border-white/30">{store?.description}</Text>
             </LinearGradient>
 
             {/* Products Grid */}
             <FlatList
                 data={products}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item, index) => item?.id?.toString() ?? `item-${index}`}
                 numColumns={2}
                 columnWrapperStyle={{ justifyContent: 'space-between' }}
                 contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
+                windowSize={7}
+                removeClippedSubviews
                 ListHeaderComponent={<Text className="text-slate-900 font-black text-xl mb-4 ml-1">Store Collection</Text>}
                 renderItem={({ item }) => (
                     <TouchableOpacity

@@ -1,7 +1,8 @@
 import SafeScreen from "@/components/SafeScreen";
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { useT as useTranslation } from '@/lib/useT';
 import { apiRequest } from "@/src/services/apiClient";
@@ -17,6 +18,7 @@ type SecurityOption = {
 
 function PrivacyAndSecurityScreen() {
   const { t } = useTranslation();
+  const { user, fetchProfile } = useAuth();
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -24,6 +26,28 @@ function PrivacyAndSecurityScreen() {
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [shareData, setShareData] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cancellingDeletion, setCancellingDeletion] = useState(false);
+
+  const isPendingDeletion = !!user?.is_deactivation_pending;
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
+
+  const cancelDeletion = async () => {
+    setCancellingDeletion(true);
+    try {
+      await apiRequest('/users/cancel-deletion/', { method: 'POST' });
+      await fetchProfile();
+      Alert.alert(t('deletion_cancelled_title'), t('deletion_cancelled_msg'));
+    } catch (e: any) {
+      Alert.alert(t('error'), e.message || t('transaction_failed'));
+    } finally {
+      setCancellingDeletion(false);
+    }
+  };
 
   const securitySettings: SecurityOption[] = [
     {
@@ -108,7 +132,7 @@ function PrivacyAndSecurityScreen() {
     {
       id: "privacy-policy",
       icon: "document-text-outline",
-      title: t('privacy_policy_title') || t('privacy_policy'),
+      title: t('privacy_policy'),
       description: t('privacy_policy_desc'),
     },
     {
@@ -146,10 +170,16 @@ function PrivacyAndSecurityScreen() {
     <SafeScreen>
       {/* HEADER */}
       <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text className="text-text-primary text-2xl font-bold">{t('privacy_security_title') || t('privacy_security')}</Text>
+        <Text className="text-text-primary text-2xl font-bold">{t('privacy_security')}</Text>
       </View>
 
       <ScrollView
@@ -257,48 +287,77 @@ function PrivacyAndSecurityScreen() {
           ))}
         </View>
 
-        {/* DELETE ACC BTN */}
+        {/* DELETE / CANCEL DELETION ACC BTN */}
         <View className="px-6 pt-4">
-          <TouchableOpacity
-            className="bg-surface rounded-2xl p-5 flex-row items-center justify-between border-2 border-red-500/20"
-            activeOpacity={0.7}
-            onPress={() => {
-              Alert.alert(
-                t('delete_account_title'),
-                t('delete_account_msg'),
-                [
-                  { text: t('cancel'), style: 'cancel' },
-                  {
-                    text: t('request_deletion'),
-                    style: 'destructive',
-                    onPress: async () => {
-                      setDeleting(true);
-                      try {
-                        await apiRequest('/users/request-deletion/', { method: 'POST' });
-                        Alert.alert(t('deletion_submitted'), t('deletion_email'));
-                      } catch (e: any) {
-                        Alert.alert(t('error'), e.message || t('transaction_failed'));
-                      } finally {
-                        setDeleting(false);
-                      }
+          {isPendingDeletion ? (
+            <TouchableOpacity
+              className="bg-surface rounded-2xl p-5 flex-row items-center justify-between border-2 border-amber-500/20"
+              activeOpacity={0.7}
+              onPress={cancelDeletion}
+              disabled={cancellingDeletion}
+            >
+              <View className="flex-row items-center">
+                <View className="bg-amber-500/20 rounded-full w-12 h-12 items-center justify-center mr-4">
+                  {cancellingDeletion ? (
+                    <ActivityIndicator size="small" color="#F59E0B" />
+                  ) : (
+                    <Ionicons name="close-circle-outline" size={24} color="#F59E0B" />
+                  )}
+                </View>
+                <View>
+                  <Text className="text-amber-500 font-bold text-base mb-1">{t('cancel_deletion_title')}</Text>
+                  <Text className="text-text-secondary text-sm">{t('cancel_deletion_pending_desc')}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              className="bg-surface rounded-2xl p-5 flex-row items-center justify-between border-2 border-red-500/20"
+              activeOpacity={0.7}
+              onPress={() => {
+                Alert.alert(
+                  t('delete_account_title'),
+                  t('delete_account_msg'),
+                  [
+                    { text: t('cancel'), style: 'cancel' },
+                    {
+                      text: t('request_deletion'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        setDeleting(true);
+                        try {
+                          await apiRequest('/users/request-deletion/', { method: 'POST' });
+                          await fetchProfile();
+                          Alert.alert(t('deletion_submitted'), t('deletion_email'));
+                        } catch (e: any) {
+                          Alert.alert(t('error'), e.message || t('transaction_failed'));
+                        } finally {
+                          setDeleting(false);
+                        }
+                      },
                     },
-                  },
-                ],
-              );
-            }}
-            disabled={deleting}
-          >
-            <View className="flex-row items-center">
-              <View className="bg-red-500/20 rounded-full w-12 h-12 items-center justify-center mr-4">
-                <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                  ],
+                );
+              }}
+              disabled={deleting}
+            >
+              <View className="flex-row items-center">
+                <View className="bg-red-500/20 rounded-full w-12 h-12 items-center justify-center mr-4">
+                  {deleting ? (
+                    <ActivityIndicator size="small" color="#EF4444" />
+                  ) : (
+                    <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                  )}
+                </View>
+                <View>
+                  <Text className="text-red-500 font-bold text-base mb-1">{t('delete_account_title')}</Text>
+                  <Text className="text-text-secondary text-sm">{t('permanently_delete')}</Text>
+                </View>
               </View>
-              <View>
-                <Text className="text-red-500 font-bold text-base mb-1">{t('delete_account_title')}</Text>
-                <Text className="text-text-secondary text-sm">{t('permanently_delete')}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* INFO ALERT */}

@@ -70,9 +70,12 @@ export default function CartScreen() {
 
             <FlatList
               data={cartItems}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={(item, index) => item?.id?.toString() ?? `item-${index}`}
               contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
+              initialNumToRender={10}
+              windowSize={7}
+              removeClippedSubviews
               renderItem={({ item }) => (
                 <View className="flex-row bg-white p-3.5 rounded-2xl mb-3.5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
                   <Image

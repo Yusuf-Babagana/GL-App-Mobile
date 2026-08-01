@@ -45,7 +45,13 @@ function WishlistScreen() {
     <SafeScreen>
       {/* HEADER */}
       <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
         <Text className="text-text-primary text-2xl font-bold">{t('wishlist')}</Text>
@@ -155,7 +161,13 @@ function LoadingUI() {
   return (
     <SafeScreen>
       <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
         <Text className="text-text-primary text-2xl font-bold">{t('wishlist')}</Text>
@@ -173,7 +185,13 @@ function ErrorUI() {
   return (
     <SafeScreen>
       <View className="px-6 pb-5 border-b border-surface flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
         <Text className="text-text-primary text-2xl font-bold">{t('wishlist')}</Text>

@@ -25,11 +25,17 @@ const TransactionReceipt: React.FC<ReceiptProps> = ({ visible, onClose, data }) 
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={onClose}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Close"
+            accessibilityRole="button"
+          >
             <X color="#999" size={24} />
           </TouchableOpacity>
 

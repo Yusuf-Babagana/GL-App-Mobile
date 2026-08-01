@@ -1,6 +1,8 @@
 // app/merchant/shop-info.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { ChevronLeft, Edit2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,6 +12,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 
 export default function ShopInformation() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { onboardingData, updateShop } = useOnboarding();
   
   const [isRegistered, setIsRegistered] = useState(onboardingData?.shop?.registered || 'no');
@@ -20,6 +23,7 @@ export default function ShopInformation() {
     shopType: onboardingData?.shop?.shopType || '',
     businessPhone: onboardingData?.shop?.businessPhone || '',
     shopAddress: onboardingData?.shop?.shopAddress || '',
+    country: onboardingData?.shop?.country || '',
     state: onboardingData?.shop?.state || '',
     cacNumber: onboardingData?.shop?.cacNumber || '',
   });
@@ -53,8 +57,9 @@ export default function ShopInformation() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView className="flex-1 px-8 pt-12" showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View className="flex-1 bg-white">
+      <ScrollView className="flex-1 px-8" contentContainerStyle={{ paddingTop: insets.top + 12 }} showsVerticalScrollIndicator={false}>
         <View className="flex-row justify-between mb-2">
           <View className="h-1 w-[32%] bg-green-600 rounded-full" />
           <View className="h-1 w-[32%] bg-green-600 rounded-full" />
@@ -62,7 +67,14 @@ export default function ShopInformation() {
         </View>
         <Text className="text-right text-gray-400 text-[10px] font-bold mb-6">Step 2</Text>
 
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mb-4">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mb-4"
+        >
           <ChevronLeft size={24} color="#1E293B" />
         </TouchableOpacity>
 
@@ -138,12 +150,13 @@ export default function ShopInformation() {
 
           <View className="mt-4">
             <Text className="text-gray-500 font-bold text-xs mb-2">Country</Text>
-            <View className="border border-gray-200 rounded-2xl p-4 flex-row items-center justify-between">
-               <View className="flex-row items-center">
-                  <View className="w-6 h-4 bg-green-700 mr-2" />
-                  <Text className="text-slate-900 font-bold text-sm">Nigeria</Text>
-               </View>
-            </View>
+            <TextInput
+              placeholder="Enter your country"
+              placeholderTextColor="#9CA3AF"
+              className="border border-gray-200 rounded-2xl p-4 text-sm font-bold text-slate-900"
+              value={form.country}
+              onChangeText={(val) => setForm({...form, country: val})}
+            />
           </View>
 
           <View className="mt-4">
@@ -201,6 +214,7 @@ export default function ShopInformation() {
           <Text className="text-white font-black text-lg">Next</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

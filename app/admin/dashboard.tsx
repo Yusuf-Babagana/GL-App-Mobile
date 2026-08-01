@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { marketAPI } from '../../lib/marketApi';
+import { ErrorState } from '../../components/ErrorState';
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [viewMode, setViewMode] = useState<'shops' | 'users'>('shops');
   const [metrics, setMetrics] = useState<any>({});
   const [pendingShops, setPendingShops] = useState([]);
@@ -32,6 +34,7 @@ export default function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const res = await marketAPI.get('/market/admin/overview/');
       // Merged robust fallback to ensure metrics never throws undefined errors
       setMetrics(res.data.metrics || {
@@ -44,6 +47,7 @@ export default function AdminDashboard() {
       setPendingShops(res.data.pending_shops || []);
       setSystemUsers(res.data.users || []);
     } catch (err) {
+      setLoadError(true);
       Alert.alert("System Error", "Failed to retrieve management sync states.");
     } finally {
       setLoading(false);
@@ -100,6 +104,16 @@ export default function AdminDashboard() {
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#4F46E5" />
       </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title="Couldn't load System HQ"
+        description="Check your connection and try again."
+        onRetry={fetchAdminData}
+      />
     );
   }
 

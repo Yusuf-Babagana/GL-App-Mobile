@@ -1,4 +1,5 @@
 // app/_layout.tsx
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { WalletProvider } from "@/context/WalletContext";
@@ -74,7 +75,9 @@ export default function RootLayout() {
               <I18nextProvider i18n={i18n}>
                 <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
                   <StatusBar style="dark" />
-                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
+                  <ErrorBoundary>
+                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' }, animation: 'fade_from_bottom' }} />
+                  </ErrorBoundary>
                 </View>
               </I18nextProvider>
             </QueryClientProvider>

@@ -108,6 +108,9 @@ export default function WalletHistoryScreen() {
                     contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4ADE80" />}
                     showsVerticalScrollIndicator={false}
+                    initialNumToRender={12}
+                    windowSize={7}
+                    removeClippedSubviews
                     onEndReached={loadMore}
                     onEndReachedThreshold={0.3}
                     ListFooterComponent={loadingMore ? <ActivityIndicator className="py-4" color="#4ADE80" /> : null}

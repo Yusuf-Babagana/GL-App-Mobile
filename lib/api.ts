@@ -27,11 +27,24 @@ api.interceptors.request.use(async (config) => {
   return Promise.reject(error);
 });
 
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Lets AuthContext register its logout() here, since this module has no
+ * access to React context/navigation directly.
+ */
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 api.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
+    if (error.response?.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
     return Promise.reject(error);
   }
 );

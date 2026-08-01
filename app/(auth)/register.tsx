@@ -8,7 +8,7 @@ import { authService } from "@/services/auth";
 import { toUserFriendlyError } from "@/lib/errorMapper";
 import { Link } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useT as useTranslation } from '@/lib/useT';
 
 export default function RegisterScreen() {
@@ -31,6 +31,9 @@ export default function RegisterScreen() {
         }
         if (form.password !== form.confirm_password) {
             return Alert.alert(t('password_mismatch'), t('passwords_no_match'));
+        }
+        if (form.password.length < 8) {
+            return Alert.alert(t('error'), t('password_too_short'));
         }
 
         setIsLoading(true);
@@ -71,6 +74,7 @@ export default function RegisterScreen() {
 
     return (
         <ScreenWrapper bg="bg-white">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1, justifyContent: 'center' }}>
                 <View className="mb-8 items-center">
                     <View className="bg-primary/10 w-20 h-20 rounded-3xl items-center justify-center mb-6" style={{ shadowColor: '#329629', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 4 }}>
@@ -113,7 +117,13 @@ export default function RegisterScreen() {
                                 value={form.password}
                                 onChangeText={(val) => setForm({ ...form, password: val })}
                             />
-                            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowPassword(p => !p)} className="p-2">
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setShowPassword(p => !p)}
+                                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                                accessibilityRole="button"
+                                className="p-2"
+                            >
                                 <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="#9CA3AF" />
                             </TouchableOpacity>
                         </View>
@@ -129,7 +139,13 @@ export default function RegisterScreen() {
                                 value={form.confirm_password}
                                 onChangeText={(val) => setForm({ ...form, confirm_password: val })}
                             />
-                            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowConfirmPassword(p => !p)} className="p-2">
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setShowConfirmPassword(p => !p)}
+                                accessibilityLabel={showConfirmPassword ? "Hide password" : "Show password"}
+                                accessibilityRole="button"
+                                className="p-2"
+                            >
                                 <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={22} color="#9CA3AF" />
                             </TouchableOpacity>
                         </View>
@@ -150,6 +166,7 @@ export default function RegisterScreen() {
                     </Link>
                 </View>
             </ScrollView>
+        </KeyboardAvoidingView>
         </ScreenWrapper>
     );
 }

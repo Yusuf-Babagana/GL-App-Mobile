@@ -3,7 +3,7 @@ import { fetchDataPlans } from '@/src/services/financeService';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const NETWORKS = [ 'MTN', 'Glo', '9mobile', 'Airtel' ];
@@ -120,7 +120,13 @@ export default function BuyDataScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="px-6 py-4 border-b border-gray-100 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Text className="text-2xl">←</Text>
         </TouchableOpacity>
         <Text className="text-xl font-bold text-gray-900 flex-1">Buy Data</Text>
@@ -141,6 +147,7 @@ export default function BuyDataScreen() {
         <Text className="text-green-700 font-bold text-lg">→</Text>
       </TouchableOpacity>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
         {loadingPlans ? (
           <View className="flex-1 items-center justify-center pt-20">
@@ -209,6 +216,7 @@ export default function BuyDataScreen() {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
       <Modal
         visible={showPlanModal}
         animationType="slide"
@@ -238,6 +246,9 @@ export default function BuyDataScreen() {
                 data={filteredPlans}
                 keyExtractor={(item) => item.ID}
                 contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+                initialNumToRender={12}
+                windowSize={7}
+                removeClippedSubviews
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => {

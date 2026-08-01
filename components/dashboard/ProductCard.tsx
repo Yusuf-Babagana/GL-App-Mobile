@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Heart, Star, Image as ImageIcon } from 'lucide-react-native';
 
 interface Product {
@@ -47,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
           <Image
             source={{ uri: imageSource }}
             className="w-full h-full"
-            style={{ resizeMode: 'cover' }}
+            contentFit="cover"
           />
         ) : (
           <View className="w-full h-full items-center justify-center">
@@ -55,7 +56,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
             <Text className="text-gray-300 text-[10px] font-bold mt-1">No Image</Text>
           </View>
         )}
-        <TouchableOpacity className="absolute bottom-3 right-3 bg-white/90 p-2 rounded-full shadow-sm">
+        <TouchableOpacity
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Add to wishlist"
+          accessibilityRole="button"
+          className="absolute bottom-3 right-3 bg-white/90 p-2 rounded-full shadow-sm"
+        >
           <Heart size={16} color="#EF4444" />
         </TouchableOpacity>
       </View>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/context/OnboardingContext';
@@ -7,6 +9,7 @@ import Checkbox from 'expo-checkbox';
 
 export default function MerchantOnboarding() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { onboardingData, updateShop } = useOnboarding();
   const [shopName, setShopName] = useState(onboardingData.shop.name);
   const [isChecked, setChecked] = useState(false);
@@ -17,13 +20,19 @@ export default function MerchantOnboarding() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1 bg-white"
     >
-      <ScrollView className="flex-1 px-8 pt-12">
+      <ScrollView className="flex-1 px-8" contentContainerStyle={{ paddingTop: insets.top + 12 }}>
         {/* Back Button */}
-        <TouchableOpacity onPress={() => router.back()} className="mb-6">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mb-6"
+        >
           <ChevronLeft size={28} color="#000000" />
         </TouchableOpacity>
 
@@ -33,10 +42,10 @@ export default function MerchantOnboarding() {
 
         {/* 3D Illustration - Using your logic/local asset */}
         <View className="items-center justify-center my-10">
-          <Image 
+          <Image
             source={require('@/assets/images/gl.jpeg')}
             style={{ width: 280, height: 280 }}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
 

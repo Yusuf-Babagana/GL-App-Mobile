@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Search, ShoppingBag } from 'lucide-react-native';
 import { ProductCard } from '@/components/dashboard/ProductCard';
@@ -8,7 +8,10 @@ import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
 import { useT as useTranslation } from '@/lib/useT';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import KYCBanner from '@/components/KYCBanner';
-import PromotedTicker from '@/components/dashboard/PromotedTicker';
+import PromotionBanner from '@/components/dashboard/PromotionBanner';
+import { useAuth } from '@/context/AuthContext';
+import { Megaphone } from 'lucide-react-native';
+import { ErrorState } from '@/components/ErrorState';
 
 const SkeletonCard = () => {
   const opacity = new Animated.Value(0.3);
@@ -32,24 +35,46 @@ const SkeletonCard = () => {
 export default function ExploreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { userRole, isSignedIn } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      setLoadError(false);
       const prodData = await marketAPI.getProducts();
       const allProducts: any[] = prodData.results || prodData;
       setProducts(allProducts.filter((p: any) => !p.video_ad_url));
     } catch (e) {
-
+      setLoadError(true);
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
   };
 
-  useFocusEffect(useCallback(() => { fetchData(); }, [searchQuery]));
+  useFocusEffect(useCallback(() => { fetchData(); }, []));
+
+  const renderProduct = useCallback(({ item }: { item: any }) => (
+    <ProductCard product={item} onPress={() => router.push(`/product/${item.id}`)} />
+  ), [router]);
+
+  const keyExtractor = useCallback(
+    (item: any, index: number) => item?.id?.toString() ?? `item-${index}`,
+    []
+  );
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter((p: any) =>
+      p.name?.toLowerCase().includes(query) ||
+      p.category_name?.toLowerCase().includes(query) ||
+      p.shop_name?.toLowerCase().includes(query)
+    );
+  }, [products, searchQuery]);
 
   return (
     <ScreenWrapper>
@@ -66,11 +91,24 @@ export default function ExploreScreen() {
         </View>
       </View>
 
-      <View className="px-5 mb-5">
-        <PromotedTicker />
-        <View className="-mt-1 mb-3">
-          <LanguageSwitcher />
-        </View>
+      <View className="px-5 mb-3">
+        <PromotionBanner />
+        {isSignedIn && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push('/promoted-post/create')}
+            className="flex-row items-center justify-center mt-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl"
+          >
+            <Megaphone size={14} color="#B45309" />
+            <Text className="text-amber-700 font-bold text-xs ml-1.5">
+              {userRole === 'seller' ? 'Promote Your Product' : 'Advertise Something to Sell'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View className="px-5 mb-3">
+        <LanguageSwitcher />
       </View>
 
       <KYCBanner />
@@ -82,17 +120,25 @@ export default function ExploreScreen() {
           <SkeletonCard />
           <SkeletonCard />
         </View>
+      ) : loadError ? (
+        <ErrorState
+          title="Couldn't load products"
+          description="Check your connection and try again."
+          onRetry={fetchData}
+        />
       ) : (
         <FlatList
-          data={products}
-          renderItem={({ item }) => (
-            <ProductCard product={item} onPress={() => router.push(`/product/${item.id}`)} />
-          )}
-          keyExtractor={(item) => item.id.toString()}
+          data={filteredProducts}
+          renderItem={renderProduct}
+          keyExtractor={keyExtractor}
           numColumns={2}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
           columnWrapperStyle={{ justifyContent: 'space-between' }}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews
           ListEmptyComponent={
             <View className="items-center justify-center mt-16">
               <View className="bg-gray-50 p-6 rounded-full mb-4">

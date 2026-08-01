@@ -21,8 +21,6 @@ export default function AppEntryIndex() {
 
         if (data.is_admin === true) {
           router.replace('/admin/dashboard');
-        } else if (data.exists && data.is_active) {
-          router.replace('/merchant');
         } else {
           router.replace('/(tabs)');
         }

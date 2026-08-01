@@ -174,7 +174,7 @@ export default function ChatScreen() {
         try {
             await api.post(`/chat/conversations/${convId}/send/`, {
                 conversation: convId,
-                message: text,
+                text: text,
             });
         } catch {
             setMessages(prev => prev.map(m => m.id === optimistic.id ? { ...m, failed: true } as Message : m));
@@ -221,7 +221,14 @@ export default function ChatScreen() {
 
             <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.backBtn}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
+                    >
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <View style={styles.headerProfile}>
@@ -289,6 +296,9 @@ export default function ChatScreen() {
                     onPress={handleSend}
                     disabled={!inputText.trim() || isSending}
                     activeOpacity={0.8}
+                    accessibilityLabel="Send message"
+                    accessibilityRole="button"
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     style={[
                         styles.sendBtn,
                         { opacity: !inputText.trim() || isSending ? 0.4 : 1 },

@@ -3,10 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 
 export default function KYCUploadScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [idImage, setIdImage] = useState<string | null>(null);
     const [selfie, setSelfie] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,8 +63,14 @@ export default function KYCUploadScreen() {
     };
 
     return (
-        <ScrollView className="flex-1 bg-white px-6 pt-12">
-            <TouchableOpacity onPress={() => router.back()} className="mb-6">
+        <ScrollView className="flex-1 bg-white px-6" contentContainerStyle={{ paddingTop: insets.top + 12 }}>
+            <TouchableOpacity
+                onPress={() => router.back()}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Go back"
+                accessibilityRole="button"
+                className="mb-6"
+            >
                 <Ionicons name="arrow-back" size={24} color="black" />
             </TouchableOpacity>
 
@@ -75,7 +84,7 @@ export default function KYCUploadScreen() {
                 className="h-48 bg-gray-100 rounded-2xl items-center justify-center mb-6 border-2 border-dashed border-gray-300 overflow-hidden"
             >
                 {idImage ? (
-                    <Image source={{ uri: idImage }} className="w-full h-full" resizeMode="cover" />
+                    <Image source={{ uri: idImage }} className="w-full h-full" contentFit="cover" />
                 ) : (
                     <View className="items-center">
                         <Ionicons name="card-outline" size={32} color="gray" />
@@ -91,7 +100,7 @@ export default function KYCUploadScreen() {
                 className="h-48 bg-gray-100 rounded-2xl items-center justify-center mb-8 border-2 border-dashed border-gray-300 overflow-hidden"
             >
                 {selfie ? (
-                    <Image source={{ uri: selfie }} className="w-full h-full" resizeMode="cover" />
+                    <Image source={{ uri: selfie }} className="w-full h-full" contentFit="cover" />
                 ) : (
                     <View className="items-center">
                         <Ionicons name="camera-outline" size={32} color="gray" />

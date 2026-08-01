@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Info, Sparkles, Building, Hash, Banknote, Lock } from "lucide-react-native";
 import SafeScreen from "../../components/SafeScreen";
 import React, { useState, useEffect } from "react";
@@ -131,6 +131,9 @@ export default function WithdrawScreen() {
                 <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => router.back()}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
                     className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
                 >
                     <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
@@ -138,7 +141,8 @@ export default function WithdrawScreen() {
                 <Text className="flex-1 text-center text-lg font-black text-slate-900 tracking-tight mr-10">Withdraw Funds</Text>
             </View>
 
-            <ScrollView 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <ScrollView
                 contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -291,6 +295,7 @@ export default function WithdrawScreen() {
                     )}
                 </TouchableOpacity>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeScreen>
     );
 }

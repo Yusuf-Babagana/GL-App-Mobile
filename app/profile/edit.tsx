@@ -7,7 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 
 export default function EditProfileScreen() {
     const router = useRouter();
@@ -114,7 +115,13 @@ export default function EditProfileScreen() {
                 <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
                     {/* Header */}
                     <View className="px-6 pt-6 pb-4 flex-row items-center">
-                        <TouchableOpacity onPress={() => router.back()} className="mr-4 p-1 rounded-full bg-gray-50">
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityLabel="Go back"
+                            accessibilityRole="button"
+                            className="mr-4 p-1 rounded-full bg-gray-50"
+                        >
                             <Ionicons name="arrow-back" size={24} color="#1E293B" />
                         </TouchableOpacity>
                         <Text className="text-2xl font-bold text-gray-900">Edit Profile</Text>

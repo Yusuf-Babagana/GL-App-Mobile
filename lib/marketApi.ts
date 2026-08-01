@@ -34,9 +34,15 @@ export const marketAPI = {
     },
 
     // 🟢 Clean, optimized product collection pull
-    getProducts: async () => {
+    getProducts: async (search?: string | null, category?: number | string | null, storeId?: number | string | null) => {
         try {
-            const response = await api.get('/market/products/');
+            const response = await api.get('/market/products/', {
+                params: {
+                    ...(search ? { search } : {}),
+                    ...(category ? { category } : {}),
+                    ...(storeId ? { shop: storeId } : {}),
+                },
+            });
             return response.data; // This returns the array of items directly
         } catch (error) {
             console.error("Error fetching market inventory items:", error);
@@ -275,8 +281,32 @@ export const marketAPI = {
         return response.data;
     },
 
-    setTransactionPin: async (pin: string) => {
-        const response = await api.post('/finance/pin/', { pin });
+    requestPasswordReset: async (email: string) => {
+        if (__DEV__) console.log('[password-reset] request ->', { email });
+        try {
+            const response = await api.post('/users/password-reset/request/', { email });
+            if (__DEV__) console.log('[password-reset] request <-', response.status, response.data);
+            return response.data;
+        } catch (error: any) {
+            if (__DEV__) console.log('[password-reset] request FAILED <-', error.response?.status, error.response?.data || error.message);
+            throw error;
+        }
+    },
+
+    confirmPasswordReset: async (email: string, otp: string, new_password: string) => {
+        if (__DEV__) console.log('[password-reset] confirm ->', { email });
+        try {
+            const response = await api.post('/users/password-reset/confirm/', { email, otp, new_password });
+            if (__DEV__) console.log('[password-reset] confirm <-', response.status, response.data);
+            return response.data;
+        } catch (error: any) {
+            if (__DEV__) console.log('[password-reset] confirm FAILED <-', error.response?.status, error.response?.data || error.message);
+            throw error;
+        }
+    },
+
+    setTransactionPin: async (pin: string, oldPin?: string | null) => {
+        const response = await api.post('/finance/pin/', { pin, old_pin: oldPin || undefined });
         return response.data;
     },
 
@@ -499,8 +529,27 @@ export const marketAPI = {
         }
     },
 
-    createPromotedPost: async (data: { text_content: string; product: number; duration_type: '24h' | '3days' | '1wk' }) => {
+    createPromotedPost: async (data: {
+        text_content: string;
+        duration_type: '24h' | '3days' | '1wk';
+        contact_preference: 'whatsapp' | 'phone' | 'both' | 'chat';
+        promotion_type: 'product' | 'standalone';
+        product?: number;
+        title?: string;
+        description?: string;
+        price?: number | string;
+        location?: string;
+        phone_number?: string;
+        whatsapp_number?: string;
+        category?: number;
+        images?: string[];
+    }) => {
         const response = await api.post('/market/promoted-posts/', data);
+        return response.data;
+    },
+
+    getPromotedPostDetail: async (id: number | string) => {
+        const response = await api.get(`/market/promoted-posts/${id}/`);
         return response.data;
     },
 

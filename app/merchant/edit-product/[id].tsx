@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { ChevronLeft, Image as ImageIcon, Video } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -166,6 +168,7 @@ export default function EditProduct() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {submitting && (
         <View className="absolute inset-0 z-50 bg-white/80 items-center justify-center">
           <ActivityIndicator size="large" color="#16A34A" />
@@ -176,7 +179,14 @@ export default function EditProduct() {
       )}
 
       <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mb-4">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mb-4"
+        >
           <ChevronLeft size={24} color="#1E293B" />
         </TouchableOpacity>
 
@@ -315,6 +325,7 @@ export default function EditProduct() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

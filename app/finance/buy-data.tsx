@@ -7,8 +7,9 @@ import { marketAPI } from '@/lib/marketApi';
 import { Stack, useRouter } from 'expo-router';
 import { Smartphone } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 export default function DataPurchaseScreen() {
     const router = useRouter();
@@ -142,7 +143,8 @@ export default function DataPurchaseScreen() {
         }
     };
 
-    const canSubmit = !loading && !!selectedPlan && phoneNumber.length === 11 && walletBalance >= planPrice;
+    const insufficientBalance = !!selectedPlan && walletBalance < planPrice;
+    const canSubmit = !loading && !!selectedPlan && phoneNumber.length === 11 && !insufficientBalance;
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -153,7 +155,7 @@ export default function DataPurchaseScreen() {
                 <Image
                     source={require('@/assets/images/gl.jpeg')}
                     className="w-8 h-8 rounded-xl mr-2.5"
-                    resizeMode="cover"
+                    contentFit="cover"
                 />
                 <Text className="flex-1 text-lg font-black text-slate-900 tracking-tight">Purchase Data</Text>
                 <View className="bg-primary-container px-3 py-1.5 rounded-full">
@@ -161,6 +163,7 @@ export default function DataPurchaseScreen() {
                 </View>
             </View>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView
                 contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
@@ -209,11 +212,27 @@ export default function DataPurchaseScreen() {
                 )}
 
                 <Text className="text-gray-700 font-bold text-xs mb-2">Amount:</Text>
-                <View className="border border-gray-200 rounded-xl p-4 mb-8 bg-gray-50">
+                <View className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
                     <Text className="text-slate-900 font-black text-lg">
                         ₦{planPrice ? planPrice.toLocaleString() : '0.0'}
                     </Text>
                 </View>
+
+                {insufficientBalance && (
+                    <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                        <Text className="text-red-700 font-bold text-sm">
+                            Insufficient wallet balance for this plan. Top up your wallet to continue.
+                        </Text>
+                    </View>
+                )}
+
+                {!!selectedPlan && !insufficientBalance && phoneNumber.length > 0 && phoneNumber.length !== 11 && (
+                    <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                        <Text className="text-amber-700 font-bold text-sm">
+                            Enter a valid 11-digit phone number to continue.
+                        </Text>
+                    </View>
+                )}
 
                 <Button
                     title="Purchase"
@@ -230,6 +249,7 @@ export default function DataPurchaseScreen() {
                     <Text className="text-primary font-bold text-sm">View Receipt History</Text>
                 </TouchableOpacity>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

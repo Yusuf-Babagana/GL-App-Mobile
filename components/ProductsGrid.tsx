@@ -3,7 +3,9 @@ import useWishlist from "@/hooks/useWishlist";
 import { Product } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { useCallback } from "react";
+import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 
 interface ProductsGridProps {
   isLoading: boolean;
@@ -15,7 +17,7 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
   const { isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist } = useWishlist();
   const { isAddingToCart, addToCart } = useCart();
 
-  const renderProduct = ({ item: product }: { item: Product }) => (
+  const renderProduct = useCallback(({ item: product }: { item: Product }) => (
     <TouchableOpacity
       className="bg-white rounded-[32px] overflow-hidden mb-5 border border-gray-50 shadow-sm"
       style={{ width: "48%" }}
@@ -26,7 +28,7 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
         <Image
           source={{ uri: product.images[0] }}
           className="w-full h-48 bg-gray-100"
-          resizeMode="cover"
+          contentFit="cover"
         />
         <TouchableOpacity
           className="absolute top-3 right-3 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-sm"
@@ -67,7 +69,7 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
         </View>
       </View>
     </TouchableOpacity>
-  );
+  ), [isInWishlist, toggleWishlist, isAddingToWishlist, isRemovingFromWishlist, addToCart]);
 
   if (isLoading) return <ActivityIndicator className="py-10" color="#1DB954" />;
   if (isError) return <Text className="text-center py-10 text-red-500">Error Loading Collection</Text>;
@@ -81,6 +83,9 @@ const ProductsGrid = ({ products, isLoading, isError }: ProductsGridProps) => {
       columnWrapperStyle={{ justifyContent: "space-between" }}
       showsVerticalScrollIndicator={false}
       scrollEnabled={false}
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
       ListEmptyComponent={<NoProductsFound />}
     />
   );

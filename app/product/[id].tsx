@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Dimensions, FlatList, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT as useTranslation } from '@/lib/useT';
 
 const { width } = Dimensions.get('window');
@@ -16,6 +17,7 @@ export default function ProductDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { addToCart } = useCart();
   const { isSignedIn } = useAuth();
 
@@ -84,10 +86,13 @@ export default function ProductDetailScreen() {
   return (
     <ScreenWrapper safeAreaTop={false}>
       {/* Header (Absolute) */}
-      <View className="absolute top-12 left-6 z-10">
+      <View className="absolute left-6 z-10" style={{ top: insets.top + 12 }}>
         <TouchableOpacity
           onPress={() => router.back()}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
           className="w-10 h-10 bg-white/90 rounded-full items-center justify-center shadow-sm backdrop-blur-md border border-gray-100"
         >
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
@@ -104,6 +109,8 @@ export default function ProductDetailScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             keyExtractor={(_, index) => index.toString()}
+            windowSize={3}
+            removeClippedSubviews
             renderItem={({ item }) => (
               <Image
                 source={{ uri: item.image || item }}

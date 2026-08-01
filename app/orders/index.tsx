@@ -4,21 +4,26 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT as useTranslation } from '@/lib/useT';
+import { ErrorState } from "@/components/ErrorState";
 
 export default function OrderListScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [orders, setOrders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
     const fetchOrders = async () => {
         try {
             setIsLoading(true);
+            setLoadError(false);
             const data = await marketAPI.getMyOrders();
             setOrders(data.results || data);
         } catch (e) {
-
+            setLoadError(true);
         } finally {
             setIsLoading(false);
         }
@@ -88,8 +93,14 @@ export default function OrderListScreen() {
             <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
             {/* Simple Header */}
-            <View className="px-6 py-4 bg-white border-b border-gray-100 flex-row items-center pt-12">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4">
+            <View className="px-6 py-4 bg-white border-b border-gray-100 flex-row items-center" style={{ paddingTop: insets.top + 12 }}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
+                    className="mr-4"
+                >
                     <Ionicons name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
                 <Text className="text-xl font-bold text-gray-900">{t('my_orders')}</Text>
@@ -99,12 +110,22 @@ export default function OrderListScreen() {
                 <View className="flex-1 justify-center items-center">
                     <ActivityIndicator color={Colors.primary} />
                 </View>
+            ) : loadError ? (
+                <ErrorState
+                    title="Couldn't load your orders"
+                    description="Check your connection and try again."
+                    onRetry={fetchOrders}
+                />
             ) : (
                 <FlatList
                     data={orders}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item, index) => item?.id?.toString() ?? `item-${index}`}
                     renderItem={renderOrder}
                     contentContainerStyle={{ padding: 24 }}
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={8}
+                    windowSize={7}
+                    removeClippedSubviews
                     ListEmptyComponent={
                         <View className="items-center mt-20">
                             <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />

@@ -164,6 +164,9 @@ export default function InboxScreen() {
                 keyExtractor={keyExtractor}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
+                initialNumToRender={12}
+                windowSize={7}
+                removeClippedSubviews
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}

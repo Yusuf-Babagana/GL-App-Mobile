@@ -21,7 +21,7 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 24 : 16,
+          bottom: (Platform.OS === 'ios' ? 24 : 16) + insets.bottom,
           left: 16,
           right: 16,
           backgroundColor: 'rgba(255,255,255,0.95)',

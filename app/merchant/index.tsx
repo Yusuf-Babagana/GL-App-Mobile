@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert, Linking, StatusBar } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { marketAPI } from '@/lib/marketApi';
 
@@ -38,6 +39,8 @@ export default function MerchantStudioDashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const scrollRef = useRef<ScrollView>(null);
+  const ordersSectionY = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -169,7 +172,7 @@ export default function MerchantStudioDashboard() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View className="flex-row gap-3 mb-6 mt-4">
           <View className="flex-1 bg-emerald-50/70 border border-emerald-100/40 p-4 rounded-3xl">
             <Text className="text-emerald-600 text-[10px] font-black uppercase tracking-widest mb-1">Withdrawable Balance</Text>
@@ -220,7 +223,7 @@ export default function MerchantStudioDashboard() {
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => router.push('/merchant')}
+            onPress={() => scrollRef.current?.scrollTo({ y: ordersSectionY.current, animated: true })}
             className="flex-1 bg-slate-900 p-4 rounded-2xl items-center"
           >
             <Text className="text-white font-black text-sm">Orders</Text>
@@ -234,7 +237,10 @@ export default function MerchantStudioDashboard() {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row justify-between items-end mb-4">
+        <View
+          className="flex-row justify-between items-end mb-4"
+          onLayout={(e) => { ordersSectionY.current = e.nativeEvent.layout.y; }}
+        >
           <View>
             <Text className="text-slate-900 text-xl font-black tracking-tight">Orders Management Deck</Text>
             <Text className="text-gray-500 text-xs font-semibold mt-0.5">{orders.length} incoming purchase tickets</Text>
@@ -344,7 +350,7 @@ export default function MerchantStudioDashboard() {
                 <View key={item.id} className="bg-white p-4 rounded-3xl flex-row border border-slate-100">
                   <View className="w-20 h-20 rounded-2xl bg-primary-container items-center justify-center overflow-hidden">
                     {imgUri ? (
-                      <Image source={{ uri: imgUri }} className="w-full h-full" resizeMode="cover" />
+                      <Image source={{ uri: imgUri }} className="w-full h-full" contentFit="cover" />
                     ) : (
                       <Text className="text-2xl">{'📦'}</Text>
                     )}

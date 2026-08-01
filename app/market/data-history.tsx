@@ -222,6 +222,9 @@ export default function DataHistoryScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerClassName="py-4"
+          initialNumToRender={12}
+          windowSize={7}
+          removeClippedSubviews
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetch(true)} colors={['#329629']} />}
         />
       )}

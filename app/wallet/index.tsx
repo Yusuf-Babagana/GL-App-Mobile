@@ -125,7 +125,8 @@ export default function WalletScreen() {
                 <Text className="text-lg font-black text-slate-900 tracking-tight">{t('gl_wallet')}</Text>
                 <TouchableOpacity
                     activeOpacity={0.7}
-                    onRefresh={onRefresh}
+                    onPress={onRefresh}
+                    disabled={refreshing}
                     className="w-10 h-10 bg-white rounded-full items-center justify-center border border-gray-100"
                 >
                     <RefreshCcw size={18} color={refreshing ? "#ccc" : "#1A1A1A"} />

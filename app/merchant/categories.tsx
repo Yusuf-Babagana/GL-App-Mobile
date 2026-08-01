@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Shirt, Monitor, Smartphone, Sofa, Baby, ToyBrick, Trophy, Utensils, ChefHat, Home, Car, Sparkles, Building2, BookOpen, Wrench, Sprout } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -41,7 +42,13 @@ export default function CategorySelection() {
         <SafeAreaView className="flex-1 bg-white">
             <View className="flex-1 px-6">
                 {/* Back Button */}
-                <TouchableOpacity onPress={() => router.back()} className="mt-4 mb-6">
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
+                    className="mt-4 mb-6"
+                >
                     <ChevronLeft size={28} color="#000000" />
                 </TouchableOpacity>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, TextInput, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
 import { useWallet } from '@/context/WalletContext';
@@ -101,12 +102,20 @@ export default function CheckoutScreen() {
       )}
 
       <View className="px-6 py-4 bg-white border-b border-slate-100 flex-row items-center">
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mr-4"
+        >
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
         <Text className="text-xl font-black text-slate-900">{t('checkout')}</Text>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <Text className="text-slate-900 text-lg font-black mb-4">{t('order_summary')}</Text>
 
@@ -265,6 +274,7 @@ export default function CheckoutScreen() {
           </Text>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

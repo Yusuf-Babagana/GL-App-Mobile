@@ -1,4 +1,5 @@
-import api from "@/lib/api";
+import api, { setUnauthorizedHandler, updateProfile } from "@/lib/api";
+import { registerForPushNotificationsAsync } from "@/lib/pushNotifications";
 import { getToken, setToken as setApiToken } from "@/src/services/apiClient";
 import { fetchProfile as fetchProfileApi } from "@/src/services/userService";
 import { debug } from "@/src/services/debug";
@@ -16,7 +17,12 @@ export interface User {
     full_name?: string;
     fullName?: string;
     role: 'buyer' | 'seller' | 'rider' | 'admin';
+    active_role?: 'buyer' | 'seller' | 'rider' | 'admin';
+    is_admin?: boolean;
     kyc_status: 'unverified' | 'pending' | 'verified' | 'rejected';
+    rejection_reason?: string | null;
+    is_deactivation_pending?: boolean;
+    deletion_requested_at?: string | null;
     phone_number?: string;
     imageUrl?: string;
 }
@@ -78,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     : userProfile;
                 
                 setUser(parsedUser);
-                setUserRole(parsedUser.active_role || (parsedUser.is_admin ? 'admin' : 'buyer'));
+                setUserRole(parsedUser.active_role || parsedUser.role || (parsedUser.is_admin ? 'admin' : 'buyer'));
             }
             
             setIsSignedIn(true);
@@ -115,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (user) {
                 await SecureStore.setItemAsync('user_profile', JSON.stringify(user));
                 setUser(user);
-                setUserRole(user.active_role || (user.is_admin ? 'admin' : 'buyer'));
+                setUserRole(user.active_role || user.role || (user.is_admin ? 'admin' : 'buyer'));
             }
 
             setIsSignedIn(true);
@@ -155,11 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setIsSignedIn(true);
                     await fetchProfile();
 
-                    // NEW: Push Notification Registration Logic (Safe for Expo Go)
+                    // Push Notification Registration Logic (Safe for Expo Go)
                     const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
                     if (!isExpoGo) {
-                        // Call your registration function here only if in a Dev Build
-                        // await registerForPushNotificationsAsync();
+                        const pushToken = await registerForPushNotificationsAsync();
+                        if (pushToken) {
+                            try {
+                                await updateProfile({ push_token: pushToken });
+                            } catch (err) {
+                                debug._raw('[initApp] failed to save push token:', err);
+                            }
+                        }
                     }
                 }
             } catch (e) {
@@ -187,11 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 1. AUTHENTICATION & KYC GATE
             if (isSignedIn) {
                 if (rootSegment === '(auth)') {
-                    const role = user?.active_role || (user?.is_admin ? 'admin' : 'buyer');
+                    const role = user?.active_role || user?.role || (user?.is_admin ? 'admin' : 'buyer');
                     if (user?.is_admin || role === 'admin') {
                         router.replace("/admin/dashboard");
-                    } else if (role === 'seller') {
-                        router.replace("/merchant");
                     } else {
                         router.replace("/(tabs)");
                     }
@@ -222,7 +232,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async () => {
         try {
             await SecureStore.deleteItemAsync("accessToken");
+            await SecureStore.deleteItemAsync("auth_token");
             await SecureStore.deleteItemAsync("refreshToken");
+            await SecureStore.deleteItemAsync("user_profile");
         } catch (error) {
         } finally {
             setIsSignedIn(false);
@@ -230,6 +242,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
         }
     };
+
+    useEffect(() => {
+        setUnauthorizedHandler(logout);
+        return () => setUnauthorizedHandler(null);
+    }, [logout]);
 
     if (isLoading) {
         return (

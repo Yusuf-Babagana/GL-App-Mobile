@@ -9,7 +9,6 @@ export interface OnboardingData {
     phone: string;
     idType: string;
     idNumber: string;
-    idImage: string | null;
   };
   shop: {
     name: string; // backwards compatibility
@@ -47,14 +46,13 @@ const initialData: OnboardingData = {
     phone: '',
     idType: '',
     idNumber: '',
-    idImage: null,
   },
   shop: {
     name: '',
     shopName: '',
     type: '',
     shopType: '',
-    country: 'Nigeria',
+    country: '',
     state: '',
     address: '',
     shopAddress: '',

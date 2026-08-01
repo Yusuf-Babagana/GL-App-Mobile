@@ -34,7 +34,6 @@ export default function MoreScreen() {
     };
 
     const mainActions = [
-        { name: t('my_shop'), icon: Store, onPress: handleMyShopPress, color: '#329629', bg: 'bg-green-50' },
         { name: t('orders'), icon: ShoppingBag, onPress: () => router.push('/orders'), color: '#3B82F6', bg: 'bg-blue-50' },
         { name: t('wallet'), icon: Wallet, onPress: () => router.push('/wallet'), color: '#F59E0B', bg: 'bg-amber-50' },
         { name: t('cart'), icon: ShoppingCart, onPress: () => router.push('/(tabs)/cart'), color: '#8B5CF6', bg: 'bg-purple-50' },
@@ -61,6 +60,30 @@ export default function MoreScreen() {
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+                {/* My Shop / Seller Dashboard — promoted to its own prominent entry point */}
+                <View className="px-6 mb-6">
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={handleMyShopPress}
+                        disabled={loading}
+                        className="bg-primary rounded-3xl px-5 py-5 flex-row items-center"
+                        style={{ shadowColor: '#329629', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 }}
+                    >
+                        <View className="bg-white/20 w-14 h-14 rounded-2xl items-center justify-center mr-4">
+                            <Store size={26} color="#FFFFFF" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white font-black text-lg">{t('my_shop')}</Text>
+                            <Text className="text-white/80 text-xs font-semibold mt-0.5">{t('my_shop_subtitle')}</Text>
+                        </View>
+                        {loading ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <ChevronRight size={22} color="#FFFFFF" />
+                        )}
+                    </TouchableOpacity>
+                </View>
+
                 {/* Quick Actions Grid */}
                 <View className="px-6 mb-6">
                     <View className="flex-row gap-3">

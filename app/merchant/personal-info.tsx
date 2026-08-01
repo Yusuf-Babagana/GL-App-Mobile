@@ -1,23 +1,23 @@
 // app/merchant/personal-info.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { ChevronLeft, Image as ImageIcon } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { Select } from '@/components/ui/Select';
 import { useOnboarding } from '@/context/OnboardingContext';
 
 export default function PersonalInformation() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { onboardingData, updatePersonal } = useOnboarding();
-  
+
   const [form, setForm] = useState({
     name: onboardingData?.personal?.name || '',
     email: onboardingData?.personal?.email || '',
     phone: onboardingData?.personal?.phone || '',
     idType: onboardingData?.personal?.idType || '',
     idNumber: onboardingData?.personal?.idNumber || '',
-    idImage: onboardingData?.personal?.idImage || null as string | null
   });
 
   const idTypes = [
@@ -25,17 +25,6 @@ export default function PersonalInformation() {
     { label: "Driver's License", value: 'drivers_license' },
     { label: 'Passport', value: 'passport' },
   ];
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setForm({ ...form, idImage: result.assets[0].uri });
-    }
-  };
 
   const handleNext = () => {
     if (!form.name || !form.email || !form.idType) {
@@ -47,8 +36,12 @@ export default function PersonalInformation() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView className="flex-1 px-8 pt-12" showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View className="flex-1 bg-white">
+      <ScrollView className="flex-1 px-8" contentContainerStyle={{ paddingTop: insets.top + 12 }} showsVerticalScrollIndicator={false}>
         <View className="flex-row justify-between mb-2">
           <View className="h-1 w-[32%] bg-green-600 rounded-full" />
           <View className="h-1 w-[32%] bg-gray-200 rounded-full" />
@@ -56,7 +49,14 @@ export default function PersonalInformation() {
         </View>
         <Text className="text-right text-gray-400 text-[10px] font-bold mb-6">Step 1</Text>
 
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mb-4">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="mb-4"
+        >
           <ChevronLeft size={24} color="#1E293B" />
         </TouchableOpacity>
 
@@ -120,26 +120,11 @@ export default function PersonalInformation() {
           />
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={pickImage}
-          className="bg-green-50 border-2 border-dashed border-green-100 rounded-3xl py-10 items-center justify-center mb-10"
-        >
-          {form.idImage ? (
-             <Image source={{ uri: form.idImage }} className="w-20 h-20 rounded-lg mb-2" />
-          ) : (
-             <ImageIcon size={48} color="#9CA3AF" strokeWidth={1.5} />
-          )}
-          <Text className="text-gray-500 text-[11px] font-bold mt-2">Upload National ID or Driver's License</Text>
-          <View className="mt-4 border border-green-600 rounded-xl px-6 py-2">
-            <Text className="text-green-600 font-black text-xs">Upload Or Snap Photo</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity activeOpacity={0.7} onPress={handleNext} className="bg-green-600 py-5 rounded-2xl items-center mb-10">
+        <TouchableOpacity activeOpacity={0.7} onPress={handleNext} className="bg-green-600 py-5 rounded-2xl items-center mb-10 mt-4">
           <Text className="text-white text-lg font-black">Next</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

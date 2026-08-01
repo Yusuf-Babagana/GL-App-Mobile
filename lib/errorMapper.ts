@@ -13,6 +13,10 @@ const knownErrors: Record<string, string> = {
   'this password is entirely numeric.': 'password_numeric',
   'enter a valid email address.': 'email_invalid',
   'ensure this field has at least 8 characters.': 'password_too_short',
+  'invalid or expired code.': 'invalid_reset_code',
+  'too many attempts. please request a new code.': 'too_many_attempts',
+  'email, otp, and new password are required.': 'fill_all_fields',
+  'password must be at least 8 characters.': 'password_too_short',
 };
 
 function normalizeMessage(msg: string): string {

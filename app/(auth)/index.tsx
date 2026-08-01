@@ -3,16 +3,18 @@ import { useRouter } from "expo-router";
 import { Briefcase, Globe, ShieldCheck, ShoppingCart } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT as useTranslation } from '@/lib/useT';
 
 const AuthScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="bg-white">
-      <View className="px-8 pt-16 pb-10 justify-center items-center">
+      <View className="px-8 pb-10 justify-center items-center" style={{ paddingTop: insets.top + 24 }}>
         {/* LOGO AREA */}
         <View className="bg-primary-container p-4 rounded-full mb-4">
           <Globe size={60} color={Colors.primary} />

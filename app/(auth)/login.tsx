@@ -8,7 +8,7 @@ import { toUserFriendlyError } from "@/lib/errorMapper";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useT as useTranslation } from '@/lib/useT';
 
 const API_HOST = 'https://glappbackend.pythonanywhere.com/api';
@@ -58,6 +58,7 @@ export default function LoginScreen() {
 
     return (
         <ScreenWrapper className="px-6 justify-center bg-white">
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'center' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View className="items-center mb-10">
                 <View className="bg-primary/10 w-20 h-20 rounded-3xl items-center justify-center mb-6" style={{ shadowColor: '#329629', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 4 }}>
                     <Ionicons name="globe-outline" size={40} color="#329629" />
@@ -86,12 +87,22 @@ export default function LoginScreen() {
                             value={password}
                             onChangeText={setPassword}
                         />
-                        <TouchableOpacity activeOpacity={0.7} onPress={() => setShowPassword(p => !p)} className="p-2">
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => setShowPassword(p => !p)}
+                            accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                            accessibilityRole="button"
+                            className="p-2"
+                        >
                             <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="#9CA3AF" />
                         </TouchableOpacity>
                     </View>
                 </View>
-                <TouchableOpacity className="self-end mb-6">
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.push('/(auth)/forgot-password')}
+                    className="self-end mb-6"
+                >
                     <Text className="text-primary font-bold text-sm">{t('forgot_password')}</Text>
                 </TouchableOpacity>
 
@@ -119,6 +130,7 @@ export default function LoginScreen() {
                     </TouchableOpacity>
                 </Link>
             </View>
+        </KeyboardAvoidingView>
         </ScreenWrapper>
     );
 }

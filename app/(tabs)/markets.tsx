@@ -15,19 +15,24 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function MarketsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [stores, setStores] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [loadError, setLoadError] = useState(false);
 
     const fetchStores = async () => {
         try {
+            setLoadError(false);
             const data = await marketAPI.getAllStores();
             setStores(data);
         } catch (e) {
-
+            setLoadError(true);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -120,7 +125,8 @@ export default function MarketsScreen() {
                 colors={[Colors.primaryContainer, '#F8FAFC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                className="pt-16 pb-6 px-6 z-10 border-b border-primary/5 rounded-b-[40px] shadow-sm mb-4"
+                className="pb-6 px-6 z-10 border-b border-primary/5 rounded-b-[40px] shadow-sm mb-4"
+                style={{ paddingTop: insets.top + 24 }}
             >
                 <View className="flex-row items-center justify-between mb-2">
                     <View className="bg-primary/10 px-3 py-1 rounded-full">
@@ -143,15 +149,25 @@ export default function MarketsScreen() {
                     <ActivityIndicator color={Colors.primary} size="large" />
                     <Text className="text-slate-400 font-bold mt-4 text-xs uppercase tracking-widest">Finding Stores...</Text>
                 </View>
+            ) : loadError ? (
+                <ErrorState
+                    title="Couldn't load markets"
+                    description="Check your connection and try again."
+                    onRetry={fetchStores}
+                />
             ) : (
                 <FlatList
                     data={stores}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item, index) => item?.id?.toString() ?? `item-${index}`}
                     renderItem={renderStore}
                     numColumns={2}
                     columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 16 }}
                     contentContainerStyle={{ paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={8}
+                    windowSize={7}
+                    removeClippedSubviews
                     refreshControl={
                         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
                     }

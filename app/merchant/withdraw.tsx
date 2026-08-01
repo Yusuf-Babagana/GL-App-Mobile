@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft, Hash, Banknote, Lock, CheckCircle } from 'lucide-react-native';
@@ -147,12 +147,20 @@ export default function MerchantWithdraw() {
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
 
       <View className="flex-row items-center px-5 py-4 bg-white border-b border-slate-100">
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="bg-slate-100 p-2 rounded-2xl mr-3">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          className="bg-slate-100 p-2 rounded-2xl mr-3"
+        >
           <ChevronLeft size={22} color="#1A1A1A" />
         </TouchableOpacity>
         <Text className="flex-1 text-center text-lg font-black text-slate-900 tracking-tight mr-10">Withdraw Funds</Text>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -312,6 +320,7 @@ export default function MerchantWithdraw() {
           )}
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

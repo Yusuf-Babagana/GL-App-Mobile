@@ -120,6 +120,9 @@ export default function OrderTrackingScreen() {
                 <View className="flex-row items-center justify-between mt-2 pointer-events-auto">
                     <TouchableOpacity
                         onPress={() => router.back()}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
                         className="bg-white p-3 rounded-full shadow-sm"
                     >
                         <Ionicons name="arrow-back" size={24} color="black" />

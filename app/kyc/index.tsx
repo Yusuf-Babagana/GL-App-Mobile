@@ -4,10 +4,13 @@ import api from "@/lib/api";
 import * as ImagePicker from 'expo-image-picker';
 import { AlertCircle, Camera, Clock, ShieldCheck } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 export default function KYCScreen() {
     const { user, fetchProfile, logout } = useAuth();
+    const insets = useSafeAreaInsets();
     const [idImage, setIdImage] = useState<string | null>(null);
     const [selfieImage, setSelfieImage] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -85,14 +88,14 @@ export default function KYCScreen() {
         // @ts-ignore
         formData.append('id_document_image', {
             uri: idImage,
-            name: `id_${user?._id}.jpg`,
+            name: `id_${user?.id}.jpg`,
             type: 'image/jpeg',
         });
 
         // @ts-ignore
         formData.append('selfie_image', {
             uri: selfieImage,
-            name: `selfie_${user?._id}.jpg`,
+            name: `selfie_${user?.id}.jpg`,
             type: 'image/jpeg',
         });
 
@@ -118,7 +121,7 @@ export default function KYCScreen() {
 
     // --- STATE 3: UNVERIFIED (The Upload Form) ---
     return (
-        <ScrollView className="flex-1 bg-white p-6">
+        <ScrollView className="flex-1 bg-white p-6" contentContainerStyle={{ paddingTop: insets.top }}>
             <View className="items-center mt-10 mb-8">
                 <ShieldCheck size={60} color={Colors.primary} />
                 <Text className="text-2xl font-black mt-4">Account Verification</Text>

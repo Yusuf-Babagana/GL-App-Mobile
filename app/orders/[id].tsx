@@ -4,11 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function OrderDetailScreen() {
     const { id, role } = useLocalSearchParams();
     const isSellerRole = role === 'seller';
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [order, setOrder] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -101,9 +103,16 @@ export default function OrderDetailScreen() {
             <StatusBar barStyle="light-content" backgroundColor="#111827" />
 
             {/* Header */}
-            <View className="bg-slate-900 pt-12 pb-6 px-6 rounded-b-[32px] z-10">
+            <View className="bg-slate-900 pb-6 px-6 rounded-b-[32px] z-10" style={{ paddingTop: insets.top + 12 }}>
                 <View className="flex-row items-center mb-4">
-                    <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} className="mr-4 bg-slate-800 p-2 rounded-full">
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => router.back()}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
+                        className="mr-4 bg-slate-800 p-2 rounded-full"
+                    >
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text className="text-white text-2xl font-bold">Order #{order.id}</Text>

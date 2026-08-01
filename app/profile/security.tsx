@@ -4,9 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator, Alert, SafeAreaView,
-    ScrollView, Text, TextInput, TouchableOpacity, View
+    ActivityIndicator, Alert,
+    ScrollView, Text, TextInput, TouchableOpacity, View,
+    KeyboardAvoidingView, Platform
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SecurityScreen() {
     const router = useRouter();
@@ -38,12 +40,19 @@ export default function SecurityScreen() {
     return (
         <SafeAreaView className="flex-1 bg-white">
             <View className="px-6 py-4 flex-row items-center border-b border-gray-100">
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()}>
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.back()}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
+                >
                     <Ionicons name="arrow-back" size={24} color="#1E293B" />
                 </TouchableOpacity>
                 <Text className="ml-4 text-xl font-black text-slate-900">Security Settings</Text>
             </View>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView className="flex-1 p-6">
                 <View className="items-center mb-8">
                     <View className="bg-primary-container p-4 rounded-full mb-4">
@@ -123,6 +132,7 @@ export default function SecurityScreen() {
                     </Text>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
