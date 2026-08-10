@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Sparkles, ShoppingBag } from 'lucide-react-native';
+import { Sparkles, ShoppingBag, ArrowRight, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { marketAPI } from '@/lib/marketApi';
+import { Colors } from '@/constants/Colors';
 
 interface PromotedPost {
     id: number;
@@ -18,8 +19,16 @@ interface PromotedPost {
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40; // matches Home's px-5 (20px) container padding on each side
-const CARD_HEIGHT = 108;
-const AUTOPLAY_MS = 4000;
+const CARD_HEIGHT = 148;
+const AUTOPLAY_MS = 4500;
+
+const shadow = {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 8,
+};
 
 function formatTimeRemaining(seconds: number | null): string | null {
     if (seconds == null) return null;
@@ -28,6 +37,11 @@ function formatTimeRemaining(seconds: number | null): string | null {
     if (hours >= 24) return `${Math.floor(hours / 24)}d left`;
     if (hours >= 1) return `${hours}h left`;
     return `${Math.max(1, Math.floor(seconds / 60))}m left`;
+}
+
+function initials(name: string | null): string {
+    if (!name) return 'G';
+    return name.trim().charAt(0).toUpperCase();
 }
 
 export default function PromotionBanner() {
@@ -86,22 +100,38 @@ export default function PromotionBanner() {
     if (posts.length === 0) {
         return (
             <TouchableOpacity
-                activeOpacity={0.85}
+                activeOpacity={0.9}
                 onPress={() => router.push('/promoted-post/create')}
                 style={{ height: CARD_HEIGHT, marginBottom: 16 }}
-                className="rounded-3xl overflow-hidden bg-emerald-600 items-center justify-center px-5"
+                className="rounded-[28px] overflow-hidden"
             >
-                <View className="flex-row items-center justify-between w-full">
-                    <View className="flex-1 pr-3">
-                        <Text className="text-white text-base font-black leading-tight">Shop Smarter</Text>
-                        <Text className="text-white/70 text-[11px] mt-1 font-medium">
-                            Promote your business today and reach thousands of customers
-                        </Text>
+                <LinearGradient
+                    colors={[Colors.primary, Colors.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ flex: 1, ...shadow }}
+                    className="items-center justify-center px-6"
+                >
+                    <View
+                        className="absolute rounded-full"
+                        style={{ width: 160, height: 160, right: -50, top: -60, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    />
+                    <View className="flex-row items-center justify-between w-full">
+                        <View className="flex-1 pr-4">
+                            <View className="flex-row items-center bg-white/15 self-start px-2.5 py-1 rounded-full mb-2">
+                                <Sparkles size={10} color="#fff" />
+                                <Text className="text-white text-[9px] font-black uppercase tracking-widest ml-1">Sponsored Slot</Text>
+                            </View>
+                            <Text className="text-white text-lg font-black leading-tight tracking-tight">Shop Smarter</Text>
+                            <Text className="text-white/75 text-[11px] mt-1 font-semibold leading-4">
+                                Promote your business today and reach thousands of customers
+                            </Text>
+                        </View>
+                        <View className="w-12 h-12 rounded-2xl bg-white/15 items-center justify-center border border-white/20">
+                            <ShoppingBag size={22} color="white" />
+                        </View>
                     </View>
-                    <View className="w-10 h-10 rounded-full bg-white/15 items-center justify-center">
-                        <ShoppingBag size={20} color="white" />
-                    </View>
-                </View>
+                </LinearGradient>
             </TouchableOpacity>
         );
     }
@@ -126,42 +156,60 @@ export default function PromotionBanner() {
                     const timeLabel = formatTimeRemaining(item.time_remaining_seconds);
                     return (
                         <TouchableOpacity
-                            activeOpacity={0.9}
+                            activeOpacity={0.92}
                             onPress={() => goToDestination(item)}
-                            style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
-                            className="rounded-3xl overflow-hidden bg-slate-200"
+                            style={{ width: CARD_WIDTH, height: CARD_HEIGHT, ...shadow }}
+                            className="rounded-[28px] overflow-hidden border border-black/5"
                         >
                             {item.image ? (
-                                <Image source={{ uri: item.image }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                <Image source={{ uri: item.image }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={300} cachePolicy="memory-disk" />
                             ) : (
-                                <View className="w-full h-full items-center justify-center bg-emerald-600" />
+                                <LinearGradient
+                                    colors={[Colors.primary, Colors.primaryDark]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{ width: '100%', height: '100%' }}
+                                />
                             )}
+
+                            {/* Legibility gradient — richer + brand-tinted at the base */}
                             <LinearGradient
-                                colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.75)']}
+                                colors={['rgba(15,23,42,0.05)', 'rgba(15,23,42,0.35)', 'rgba(6,20,10,0.92)']}
+                                locations={[0, 0.45, 1]}
                                 style={{ position: 'absolute', left: 0, right: 0, bottom: 0, top: 0 }}
                             />
 
-                            <View className="absolute top-2 left-2 flex-row items-center bg-white/90 px-2 py-0.5 rounded-full">
-                                <Sparkles size={10} color="#059669" />
-                                <Text className="text-emerald-700 text-[9px] font-black uppercase tracking-widest ml-1">Sponsored</Text>
+                            <View className="absolute top-3 left-3 flex-row items-center bg-white px-2.5 py-1 rounded-full" style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } }}>
+                                <Sparkles size={10} color={Colors.primary} />
+                                <Text className="text-[9px] font-black uppercase tracking-widest ml-1" style={{ color: Colors.primaryDark }}>Sponsored</Text>
                             </View>
 
                             {!!timeLabel && (
-                                <View className="absolute top-2 right-2 bg-black/40 px-2 py-0.5 rounded-full">
-                                    <Text className="text-white text-[9px] font-bold">{timeLabel}</Text>
+                                <View className="absolute top-3 right-3 flex-row items-center bg-black/45 px-2.5 py-1 rounded-full">
+                                    <Clock size={9} color="#fff" />
+                                    <Text className="text-white text-[9px] font-bold ml-1">{timeLabel}</Text>
                                 </View>
                             )}
 
-                            <View className="absolute bottom-2 left-3 right-3">
-                                <Text numberOfLines={1} className="text-white/70 text-[10px] font-semibold mb-0.5">
-                                    {item.seller_name || 'Sponsored'}
-                                </Text>
-                                <View className="flex-row items-center justify-between">
-                                    <Text numberOfLines={1} className="text-white text-sm font-black flex-1 mr-2">
+                            <View className="absolute bottom-3 left-3.5 right-3.5">
+                                <View className="flex-row items-center mb-1.5">
+                                    <View className="w-5 h-5 rounded-full bg-white/20 items-center justify-center border border-white/30 mr-1.5">
+                                        <Text className="text-white text-[9px] font-black">{initials(item.seller_name)}</Text>
+                                    </View>
+                                    <Text numberOfLines={1} className="text-white/75 text-[10px] font-bold uppercase tracking-wider flex-1">
+                                        {item.seller_name || 'Verified Seller'}
+                                    </Text>
+                                </View>
+
+                                <View className="flex-row items-end justify-between">
+                                    <Text numberOfLines={2} className="text-white text-[15px] font-black leading-5 flex-1 mr-3">
                                         {item.text_content}
                                     </Text>
-                                    <View className="bg-white px-2.5 py-1 rounded-full">
-                                        <Text className="text-slate-900 text-[10px] font-black">View Details</Text>
+                                    <View className="flex-row items-center bg-white pl-2.5 pr-1.5 py-1.5 rounded-full">
+                                        <Text className="text-slate-900 text-[10px] font-black mr-1">View</Text>
+                                        <View className="w-4 h-4 rounded-full items-center justify-center" style={{ backgroundColor: Colors.primary }}>
+                                            <ArrowRight size={10} color="#fff" />
+                                        </View>
                                     </View>
                                 </View>
                             </View>
@@ -171,15 +219,15 @@ export default function PromotionBanner() {
             />
 
             {posts.length > 1 && (
-                <View className="flex-row justify-center mt-2.5" style={{ gap: 5 }}>
+                <View className="flex-row justify-center mt-3" style={{ gap: 5 }}>
                     {posts.map((_, i) => (
                         <View
                             key={i}
                             style={{
-                                width: i === activeIndex ? 16 : 6,
+                                width: i === activeIndex ? 18 : 6,
                                 height: 6,
                                 borderRadius: 3,
-                                backgroundColor: i === activeIndex ? '#329629' : '#D1D5DB',
+                                backgroundColor: i === activeIndex ? Colors.primary : '#D1D5DB',
                             }}
                         />
                     ))}

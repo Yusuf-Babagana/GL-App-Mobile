@@ -21,14 +21,27 @@ interface ProductCardProps {
   onPress?: () => void;
 }
 
+const BASE_URL = "https://glappbackend.pythonanywhere.com";
+
+// Product images can come back as a full URL (e.g. Cloudinary) or a
+// relative path served from the backend's own /media/ directory.
+const resolveImageUrl = (path?: string | null): string | undefined => {
+  if (!path || path === "null" || path === "undefined") return undefined;
+  if (path.startsWith('http')) return path;
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  return `${BASE_URL}/media/${cleanPath}`;
+};
+
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
   const price_number = Number(product.price) || 0;
 
-  const imageSource = product.image || (product.images?.length > 0
-    ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].image)
-    : null
-  );
-  const hasImage = Boolean(imageSource) && imageSource !== "null" && imageSource !== "undefined";
+  const images = product.images ?? [];
+  const firstImage = images.length > 0
+    ? (typeof images[0] === 'string' ? images[0] : images[0].image)
+    : null;
+  const rawImage = product.image || firstImage;
+  const imageSource = resolveImageUrl(rawImage);
+  const hasImage = Boolean(imageSource);
 
   return (
     <TouchableOpacity
@@ -47,8 +60,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
         {hasImage ? (
           <Image
             source={{ uri: imageSource }}
-            className="w-full h-full"
+            style={{ width: '100%', height: '100%' }}
             contentFit="cover"
+            transition={300}
+            cachePolicy="memory-disk"
+            onError={(e) => console.log('[ProductCard] image failed to load:', imageSource, e.error)}
           />
         ) : (
           <View className="w-full h-full items-center justify-center">
@@ -76,7 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
 
         <View className="bg-green-50 rounded-full px-2 py-0.5 self-start mb-2">
           <Text className="text-green-700 text-[9px] font-bold uppercase tracking-wider" numberOfLines={1}>
-            {product.store?.name || product.store || product.shop_name || "Globalink"}
+            {(typeof product.store === 'string' ? product.store : product.store?.name) || product.shop_name || "Globalink"}
           </Text>
         </View>
 

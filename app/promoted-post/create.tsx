@@ -3,11 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityInd
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { ChevronLeft, Megaphone, Package, CheckCircle2, Tag, X, Plus, MessageCircle, Phone } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { ChevronLeft, Megaphone, Package, CheckCircle2, Tag, MessageCircle, Phone } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { marketAPI } from '@/lib/marketApi';
-import { uploadToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/context/AuthContext';
 import { useWallet } from '@/context/WalletContext';
 
@@ -24,7 +22,6 @@ const DEFAULT_TIERS: Tier[] = [
 ];
 
 const MAX_CHARS = 300;
-const MAX_ITEM_IMAGES = 5;
 
 const CONTACT_OPTIONS: { value: ContactPreference; label: string }[] = [
   { value: 'chat', label: 'In-app Chat' },
@@ -58,7 +55,6 @@ export default function CreatePromotedPost() {
   // Sell-an-item flow
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [itemImages, setItemImages] = useState<{ uri: string; url: string | null; uploading: boolean }[]>([]);
   const [itemTitle, setItemTitle] = useState('');
   const [itemDescription, setItemDescription] = useState('');
   const [itemPrice, setItemPrice] = useState('');
@@ -124,44 +120,16 @@ export default function CreatePromotedPost() {
     }
   }, [promotionType, contactPreference]);
 
-  const uploadedImageUrls = itemImages.filter((i) => i.url).map((i) => i.url as string);
-
-  const addItemImage = async () => {
-    if (itemImages.length >= MAX_ITEM_IMAGES) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-
-    const uri = result.assets[0].uri;
-    const index = itemImages.length;
-    setItemImages((prev) => [...prev, { uri, url: null, uploading: true }]);
-    try {
-      const url = await uploadToCloudinary(uri, false);
-      setItemImages((prev) => prev.map((img, i) => (i === index ? { ...img, url, uploading: false } : img)));
-    } catch (err: any) {
-      setItemImages((prev) => prev.filter((_, i) => i !== index));
-      Alert.alert('Upload Failed', err.message || 'Could not upload photo. Please try again.');
-    }
-  };
-
-  const removeItemImage = (index: number) => {
-    setItemImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const canSubmit = useMemo(() => {
     if (submitting || exceedsBalance || text.trim().length === 0) return false;
     if (promotionType === 'product') return !!selectedProductId;
-    return itemTitle.trim().length > 0 && itemPhone.trim().length > 0 && uploadedImageUrls.length > 0;
-  }, [submitting, exceedsBalance, text, promotionType, selectedProductId, itemTitle, itemPhone, uploadedImageUrls.length]);
+    return itemTitle.trim().length > 0 && itemPhone.trim().length > 0;
+  }, [submitting, exceedsBalance, text, promotionType, selectedProductId, itemTitle, itemPhone]);
 
   const resetForm = () => {
     setText('');
     setSelectedProductId(null);
     setDuration('24h');
-    setItemImages([]);
     setItemTitle('');
     setItemDescription('');
     setItemPrice('');
@@ -197,7 +165,6 @@ export default function CreatePromotedPost() {
           phone_number: itemPhone.trim(),
           whatsapp_number: itemWhatsapp.trim() || undefined,
           category: selectedCategoryId || undefined,
-          images: uploadedImageUrls,
         });
       }
 
@@ -210,10 +177,20 @@ export default function CreatePromotedPost() {
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const data = error.response?.data;
-      const msg =
-        (typeof data === 'string' ? data : data?.error || data?.detail || data?.message) ||
-        'Could not publish your promotion. Please try again.';
-      Alert.alert('Promotion Failed', msg);
+      console.error('[promoted-post] submit failed:', error.response?.status, JSON.stringify(data));
+
+      let msg: string | undefined;
+      if (typeof data === 'string') {
+        msg = data;
+      } else if (data?.error || data?.detail || data?.message) {
+        msg = data.error || data.detail || data.message;
+      } else if (data && typeof data === 'object') {
+        // DRF field validation errors come back as { field: ["msg", ...] }
+        msg = Object.entries(data)
+          .map(([field, val]) => `${field}: ${Array.isArray(val) ? val.join(' ') : val}`)
+          .join('\n');
+      }
+      Alert.alert('Promotion Failed', msg || 'Could not publish your promotion. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -347,36 +324,6 @@ export default function CreatePromotedPost() {
             <>
               <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">2. Item Details</Text>
               <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
-                <Text className="text-slate-500 text-xs font-bold mb-2 uppercase tracking-wider">Photos</Text>
-                <View className="flex-row flex-wrap mb-4" style={{ gap: 10 }}>
-                  {itemImages.map((img, i) => (
-                    <View key={img.uri} style={{ width: 70, height: 70 }} className="rounded-2xl overflow-hidden bg-gray-100">
-                      <Image source={{ uri: img.uri }} style={{ width: 70, height: 70 }} />
-                      {img.uploading ? (
-                        <View className="absolute inset-0 items-center justify-center bg-black/30">
-                          <ActivityIndicator color="white" size="small" />
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => removeItemImage(i)}
-                          className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"
-                        >
-                          <X size={12} color="white" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-                  {itemImages.length < MAX_ITEM_IMAGES && (
-                    <TouchableOpacity
-                      onPress={addItemImage}
-                      style={{ width: 70, height: 70 }}
-                      className="rounded-2xl border-2 border-dashed border-gray-300 items-center justify-center"
-                    >
-                      <Plus size={22} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
                 <TextInput
                   className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 mb-3 text-slate-900 font-semibold"
                   placeholder="Item title (e.g. Toyota Corolla 2020)"

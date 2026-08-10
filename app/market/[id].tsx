@@ -125,7 +125,7 @@ export default function StorePublicView() {
                     >
                         <View className="h-36 bg-slate-50 relative">
                             <Image
-                                source={{ uri: item.images?.[0]?.image }}
+                                source={{ uri: item.image || item.images?.[0]?.image }}
                                 className="w-full h-full"
                                 contentFit="cover"
                                 transition={300}

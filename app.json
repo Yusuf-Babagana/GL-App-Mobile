@@ -19,10 +19,7 @@
         "NSPhotoLibraryUsageDescription": "Globalink needs access to your photo library to let you upload a profile picture.",
         "NSCameraUsageDescription": "Globalink needs camera access to let you take a profile picture.",
         "NSLocationWhenInUseUsageDescription": "Globalink uses your location to show nearby stores and services.",
-        "NSNotificationsUsageDescription": "Globalink sends notifications for order updates and promotions.",
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
+        "NSNotificationsUsageDescription": "Globalink sends notifications for order updates and promotions."
       },
       "associatedDomains": []
     },
