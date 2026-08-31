@@ -9,6 +9,7 @@ import { Colors } from '@/constants/Colors';
 
 interface PromotedPost {
     id: number;
+    code: string;
     text_content: string;
     promotion_type: 'product' | 'standalone';
     product_id: number | null;
@@ -19,7 +20,7 @@ interface PromotedPost {
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40; // matches Home's px-5 (20px) container padding on each side
-const CARD_HEIGHT = 148;
+const CARD_HEIGHT = 172;
 const AUTOPLAY_MS = 4500;
 
 const shadow = {
@@ -90,11 +91,10 @@ export default function PromotionBanner() {
     }).current;
 
     const goToDestination = (post: PromotedPost) => {
-        if (post.promotion_type === 'product' && post.product_id) {
-            router.push({ pathname: '/product/[id]', params: { id: post.product_id } });
-        } else {
-            router.push({ pathname: '/promoted-post/[id]', params: { id: post.id } });
-        }
+        // Every promotion has its own page (with Share / Copy link / Chat);
+        // product promos link on to the product from there.
+        if (!post.code) return;
+        router.push({ pathname: '/promotion/[code]', params: { code: post.code } });
     };
 
     if (posts.length === 0) {
@@ -202,7 +202,7 @@ export default function PromotionBanner() {
                                 </View>
 
                                 <View className="flex-row items-end justify-between">
-                                    <Text numberOfLines={2} className="text-white text-[15px] font-black leading-5 flex-1 mr-3">
+                                    <Text numberOfLines={3} className="text-white text-[15px] font-black leading-5 flex-1 mr-3">
                                         {item.text_content}
                                     </Text>
                                     <View className="flex-row items-center bg-white pl-2.5 pr-1.5 py-1.5 rounded-full">

@@ -111,6 +111,33 @@ export interface OrderItem {
   priceAtPurchase: number;
 }
 
+// --- PROMOTED POSTS / ADVERTISEMENTS ---
+
+// Unified shape returned by the promoted-posts endpoints (active list, detail,
+// and the shareable /market/promotions/<code>/ lookup). Denormalized by the
+// backend so both promotion_type values share one shape.
+export interface Promotion {
+  id: number;
+  code: string;            // shareable short id — used in the deep link
+  share_url: string | null; // https://<host>/promotion/<code>
+  seller_id: number | null;
+  seller_name: string | null;
+  text_content: string;
+  promotion_type: 'product' | 'standalone';
+  contact_preference: 'chat' | 'whatsapp' | 'phone' | 'both'; // always 'chat' for new posts
+  product_id: number | null;
+  title: string | null;
+  price: number | string | null;
+  location: string | null;
+  description?: string | null;
+  image: string | null;
+  images: string[];
+  duration_type: '24h' | '3days' | '1wk';
+  created_at: string;
+  expires_at: string | null;
+  time_remaining_seconds: number | null;
+}
+
 // --- JOBS & TALENT (WORK) ---
 
 export interface JobPosting {

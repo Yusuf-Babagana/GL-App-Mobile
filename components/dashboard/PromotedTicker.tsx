@@ -8,6 +8,7 @@ import { useT as useTranslation } from '@/lib/useT';
 
 interface PromotedPost {
     id: number;
+    code: string;
     text_content: string;
     promotion_type: 'product' | 'standalone';
     product_id: number | null;
@@ -60,11 +61,8 @@ export default function PromotedTicker() {
     }, [setWidth, posts.length, translateX]);
 
     const goToDestination = (post: PromotedPost) => {
-        if (post.promotion_type === 'product' && post.product_id) {
-            router.push({ pathname: '/product/[id]', params: { id: post.product_id } });
-        } else {
-            router.push({ pathname: '/promoted-post/[id]', params: { id: post.id } });
-        }
+        if (!post.code) return;
+        router.push({ pathname: '/promotion/[code]', params: { code: post.code } });
     };
 
     if (posts.length === 0) {
@@ -122,7 +120,7 @@ export default function PromotedTicker() {
                         numberOfLines={1}
                         ellipsizeMode="tail"
                         className="text-white font-bold text-sm ml-2.5"
-                        style={{ flexShrink: 0, maxWidth: 220 }}
+                        style={{ flexShrink: 0, maxWidth: 300 }}
                     >
                         {post.text_content}
                     </Text>

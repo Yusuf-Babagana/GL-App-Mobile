@@ -532,7 +532,6 @@ export const marketAPI = {
     createPromotedPost: async (data: {
         text_content: string;
         duration_type: '24h' | '3days' | '1wk';
-        contact_preference: 'whatsapp' | 'phone' | 'both' | 'chat';
         promotion_type: 'product' | 'standalone';
         product?: number;
         title?: string;
@@ -540,7 +539,6 @@ export const marketAPI = {
         price?: number | string;
         location?: string;
         phone_number?: string;
-        whatsapp_number?: string;
         category?: number;
         images?: string[];
     }) => {
@@ -548,8 +546,11 @@ export const marketAPI = {
         return response.data;
     },
 
-    getPromotedPostDetail: async (id: number | string) => {
-        const response = await api.get(`/market/promoted-posts/${id}/`);
+    // Public lookup by the shareable short code — backs the deep link
+    // GLAPP://promotion/<code> and https://<host>/promotion/<code>.
+    // Throws with error.response.status 404 (unknown) or 410 (expired/removed).
+    getPromotionByCode: async (code: string) => {
+        const response = await api.get(`/market/promotions/${encodeURIComponent(code)}/`);
         return response.data;
     },
 

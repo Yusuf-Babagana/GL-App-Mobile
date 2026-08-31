@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { ChevronLeft, Megaphone, Package, CheckCircle2, Tag, MessageCircle, Phone } from 'lucide-react-native';
+import { ChevronLeft, Megaphone, Package, CheckCircle2, Tag, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { marketAPI } from '@/lib/marketApi';
 import { useAuth } from '@/context/AuthContext';
@@ -12,7 +12,6 @@ import { useWallet } from '@/context/WalletContext';
 type DurationType = '24h' | '3days' | '1wk';
 type Tier = { value: DurationType; label: string; price: number };
 type PromotionType = 'product' | 'standalone';
-type ContactPreference = 'whatsapp' | 'phone' | 'both' | 'chat';
 type Category = { id: number; name: string };
 
 const DEFAULT_TIERS: Tier[] = [
@@ -22,13 +21,7 @@ const DEFAULT_TIERS: Tier[] = [
 ];
 
 const MAX_CHARS = 300;
-
-const CONTACT_OPTIONS: { value: ContactPreference; label: string }[] = [
-  { value: 'chat', label: 'In-app Chat' },
-  { value: 'whatsapp', label: 'WhatsApp Only' },
-  { value: 'phone', label: 'Phone Call Only' },
-  { value: 'both', label: 'WhatsApp + Phone' },
-];
+const PREVIEW_LINES = 3;
 
 function getImageUrl(item: any): string | null {
   const path = item?.image || item?.images?.[0]?.image;
@@ -45,7 +38,7 @@ export default function CreatePromotedPost() {
 
   const [tiers, setTiers] = useState<Tier[]>(DEFAULT_TIERS);
   const [promotionType, setPromotionType] = useState<PromotionType>('product');
-  const [contactPreference, setContactPreference] = useState<ContactPreference>('chat');
+  const [previewExpanded, setPreviewExpanded] = useState(false);
 
   // Existing-product flow
   const [products, setProducts] = useState<any[]>([]);
@@ -60,7 +53,6 @@ export default function CreatePromotedPost() {
   const [itemPrice, setItemPrice] = useState('');
   const [itemLocation, setItemLocation] = useState('');
   const [itemPhone, setItemPhone] = useState(user?.phone_number || '');
-  const [itemWhatsapp, setItemWhatsapp] = useState('');
 
   const [text, setText] = useState('');
   const [duration, setDuration] = useState<DurationType>('24h');
@@ -109,22 +101,11 @@ export default function CreatePromotedPost() {
   const exceedsBalance = selectedTier.price > availableBalance;
   const remainingBalance = availableBalance - selectedTier.price;
 
-  const contactOptions = useMemo(
-    () => (promotionType === 'standalone' ? CONTACT_OPTIONS.filter((o) => o.value !== 'chat') : CONTACT_OPTIONS),
-    [promotionType]
-  );
-
-  useEffect(() => {
-    if (promotionType === 'standalone' && contactPreference === 'chat') {
-      setContactPreference('whatsapp');
-    }
-  }, [promotionType, contactPreference]);
-
   const canSubmit = useMemo(() => {
     if (submitting || exceedsBalance || text.trim().length === 0) return false;
     if (promotionType === 'product') return !!selectedProductId;
-    return itemTitle.trim().length > 0 && itemPhone.trim().length > 0;
-  }, [submitting, exceedsBalance, text, promotionType, selectedProductId, itemTitle, itemPhone]);
+    return itemTitle.trim().length > 0;
+  }, [submitting, exceedsBalance, text, promotionType, selectedProductId, itemTitle]);
 
   const resetForm = () => {
     setText('');
@@ -134,7 +115,6 @@ export default function CreatePromotedPost() {
     setItemDescription('');
     setItemPrice('');
     setItemLocation('');
-    setItemWhatsapp('');
     setSelectedCategoryId(null);
   };
 
@@ -145,35 +125,51 @@ export default function CreatePromotedPost() {
       const basePayload = {
         text_content: text.trim(),
         duration_type: duration,
-        contact_preference: contactPreference,
       };
 
+      let created: any;
       if (promotionType === 'product') {
-        await marketAPI.createPromotedPost({
+        created = await marketAPI.createPromotedPost({
           ...basePayload,
           promotion_type: 'product',
           product: selectedProductId as number,
         });
       } else {
-        await marketAPI.createPromotedPost({
+        created = await marketAPI.createPromotedPost({
           ...basePayload,
           promotion_type: 'standalone',
           title: itemTitle.trim(),
           description: itemDescription.trim(),
           price: itemPrice ? Number(itemPrice) : undefined,
           location: itemLocation.trim(),
-          phone_number: itemPhone.trim(),
-          whatsapp_number: itemWhatsapp.trim() || undefined,
+          phone_number: itemPhone.trim() || undefined,
           category: selectedCategoryId || undefined,
         });
       }
 
+      const shareUrl: string | undefined = created?.data?.share_url;
+
       refreshWallet();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success 🎉', 'Your promotion is now live.', [
-        { text: 'Create Another', onPress: resetForm },
-        { text: 'Done', style: 'cancel', onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        'Success 🎉',
+        shareUrl
+          ? 'Your promotion is now live. Share its link so buyers can open it directly.'
+          : 'Your promotion is now live.',
+        [
+          ...(shareUrl
+            ? [{
+                text: 'Share Link',
+                onPress: () => {
+                  Share.share({ message: `${itemTitle.trim() || 'Check out my promotion'} — ${shareUrl}`, url: shareUrl }).catch(() => {});
+                  resetForm();
+                },
+              }]
+            : []),
+          { text: 'Create Another', onPress: resetForm },
+          { text: 'Done', style: 'cancel', onPress: () => router.back() },
+        ]
+      );
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const data = error.response?.data;
@@ -383,68 +379,77 @@ export default function CreatePromotedPost() {
                 />
 
                 <TextInput
-                  className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 mb-3 text-slate-900 font-semibold"
-                  placeholder="Phone number"
+                  className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-slate-900 font-semibold"
+                  placeholder="Phone number (optional)"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="phone-pad"
                   value={itemPhone}
                   onChangeText={setItemPhone}
                 />
-
-                <TextInput
-                  className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-slate-900 font-semibold"
-                  placeholder="WhatsApp number (optional, if different)"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="phone-pad"
-                  value={itemWhatsapp}
-                  onChangeText={setItemWhatsapp}
-                />
               </View>
             </>
           )}
 
-          <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">3. How Should Buyers Contact You?</Text>
-          <View className="flex-row flex-wrap mb-6" style={{ gap: 8 }}>
-            {contactOptions.map((opt) => {
-              const selected = contactPreference === opt.value;
-              const Icon = opt.value === 'phone' ? Phone : opt.value === 'chat' ? MessageCircle : MessageCircle;
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  activeOpacity={0.7}
-                  onPress={() => setContactPreference(opt.value)}
-                  className={`flex-row items-center px-4 py-2.5 rounded-full border ${
-                    selected ? 'bg-emerald-600 border-emerald-600' : 'bg-white border-gray-200'
-                  }`}
-                >
-                  <Icon size={14} color={selected ? '#fff' : '#9CA3AF'} />
-                  <Text className={`ml-2 text-xs font-bold ${selected ? 'text-white' : 'text-slate-600'}`}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">4. Your Message</Text>
+          <Text className="text-slate-900 font-bold mb-2 uppercase tracking-wider text-xs ml-1">3. Your Advertisement</Text>
+          <Text className="text-gray-500 text-xs mb-4 ml-1">
+            Write a proper advertisement — buyers see this text on your promotion.
+          </Text>
           <View className="bg-white rounded-3xl p-5 border border-gray-100 mb-6">
             <View className="flex-row items-start bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 mb-2">
               <Megaphone size={20} color="#9CA3AF" style={{ marginTop: 2 }} />
               <TextInput
                 className="flex-1 ml-3 text-slate-900 font-semibold text-base"
-                placeholder="What do you want everyone to see?"
+                placeholder="Describe what you're advertising — what it is, why it's a great deal, and what buyers should do next."
                 placeholderTextColor="#9CA3AF"
                 multiline
                 maxLength={MAX_CHARS}
                 value={text}
                 onChangeText={setText}
-                style={{ minHeight: 70, textAlignVertical: 'top' }}
+                style={{ minHeight: 160, textAlignVertical: 'top' }}
               />
             </View>
             <Text className="text-gray-400 text-xs text-right mr-1">{text.length}/{MAX_CHARS}</Text>
           </View>
 
-          <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">5. Choose Duration</Text>
+          {/* Live preview — what buyers will see on the promotion */}
+          {text.trim().length > 0 && (
+            <>
+              <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">Preview</Text>
+              <View className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-6">
+                <View className="flex-row items-center px-4 pt-4 pb-2">
+                  <View className="w-6 h-6 rounded-full bg-emerald-100 items-center justify-center mr-2">
+                    <Text className="text-emerald-700 text-[10px] font-black">
+                      {(user?.full_name || 'G').trim().charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text className="text-slate-500 text-[11px] font-bold uppercase tracking-wider flex-1" numberOfLines={1}>
+                    {user?.full_name || 'You'}
+                  </Text>
+                  <View className="flex-row items-center bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <Sparkles size={9} color="#329629" />
+                    <Text className="text-emerald-700 text-[9px] font-black uppercase tracking-widest ml-1">Sponsored</Text>
+                  </View>
+                </View>
+                <View className="px-4 pb-4">
+                  <Text
+                    className="text-slate-800 text-sm leading-5"
+                    numberOfLines={previewExpanded ? undefined : PREVIEW_LINES}
+                  >
+                    {text.trim()}
+                  </Text>
+                  {text.trim().length > 120 && (
+                    <TouchableOpacity activeOpacity={0.7} onPress={() => setPreviewExpanded((v) => !v)} className="mt-1.5">
+                      <Text className="text-emerald-700 font-bold text-xs">
+                        {previewExpanded ? 'Show less' : 'Read more'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+
+          <Text className="text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs ml-1">4. Choose Duration</Text>
           <View className="mb-6">
             {tiers.map((tier) => {
               const selected = tier.value === duration;
