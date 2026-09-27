@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
   const handleApproveShop = async (shopId: string) => {
     try {
-      const res = await marketAPI.post(`/api/market/admin/approve-shop/${shopId}/`);
+      const res = await marketAPI.post(`/market/admin/approve-shop/${shopId}/`);
       if (res.data.status === 'success') {
         Alert.alert("Success", "Shop profile activated.");
         fetchAdminData();
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
   const updateUserRoleOnServer = async (userId: number, targetRole: 'admin' | 'seller' | 'buyer') => {
     try {
       setLoading(true);
-      const res = await marketAPI.post(`/api/market/admin/update-user-role/${userId}/`, { role: targetRole });
+      const res = await marketAPI.post(`/market/admin/update-user-role/${userId}/`, { role: targetRole });
       if (res.data.status === 'success') {
         Alert.alert("Updated", "User system permissions adjusted.");
         fetchAdminData();
