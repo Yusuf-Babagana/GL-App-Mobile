@@ -24,6 +24,9 @@ export interface User {
     is_deactivation_pending?: boolean;
     deletion_requested_at?: string | null;
     phone_number?: string;
+    phoneNumber?: string;
+    first_name?: string;
+    last_name?: string;
     imageUrl?: string;
 }
 
@@ -215,7 +218,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 // 3. GUEST PROTECTION
-                const protectedRoutes = ['seller', 'wallet', 'kyc', 'admin'];
+                // Must match the actual top-level app/ route folders — this
+                // used to list 'seller' (no such folder; the real one is
+                // 'merchant') and omitted 'finance' and 'orders' entirely,
+                // so guests could navigate straight into those screens.
+                const protectedRoutes = ['merchant', 'wallet', 'finance', 'kyc', 'admin', 'orders'];
                 if (protectedRoutes.includes(rootSegment)) {
                     router.replace("/(auth)/login");
                 } else if (rootSegment === '(tabs)' && segments[1] === 'cart') {

@@ -62,8 +62,13 @@ const useCart = () => {
 
   const removeFromCartMutation = useMutation({
     mutationFn: async (productId: string) => {
+      // The backend deletes by CartItem id, not product id — resolve the
+      // actual cart item from the cached cart before sending the request.
+      const item = cart?.items?.find(
+        (i: any) => String(i.product?.id ?? i.product) === String(productId)
+      );
       const { data } = await api.delete("/market/cart/", {
-        data: { item_id: Number(productId) },
+        data: { item_id: item?.id ?? Number(productId) },
       });
       return normalizeCart(data);
     },
@@ -81,9 +86,9 @@ const useCart = () => {
   });
 
   const cartTotal =
-    cart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0;
+    cart?.items.reduce((sum: number, item: any) => sum + item.product.price * item.quantity, 0) ?? 0;
 
-  const cartItemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+  const cartItemCount = cart?.items.reduce((sum: number, item: any) => sum + item.quantity, 0) ?? 0;
 
   return {
     cart,
